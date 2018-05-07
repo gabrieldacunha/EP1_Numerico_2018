@@ -12,10 +12,13 @@
 
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Declaracao de funcoes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 double** criarMatrizDinamica(int m, int n);
+double* criarVetorDinamico(int N);
 double** criarMatrizBarras(char* nome_arquivo, int *linhas, int *colunas);
 double** criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matriz_B);
 void imprimirMatriz(double** Matriz, int linhas, int colunas);
 void destruirMatriz(double** Matriz, int linhas);
+void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N) ;
+double** decomporLU(double **matriz_A, int N, int *vetor_permut);
 
 
 /* -------------------------------------------------------------------------------------*/
@@ -27,6 +30,8 @@ int main() {
     double** matriz_nos;
     double** matriz_G; /*Matriz de Condutancias*/
     double** matriz_B; /*Matriz de Susceptancias*/
+    int permutacoes;
+    int* vetor_permut;
 
     /*Execução do codigo*/
 
@@ -42,12 +47,22 @@ int main() {
     matriz_G = criarMatrizDinamica(linhas_Y, colunas_Y);
     criarMatrizAdmitancias(nome_arquivo, matriz_G, matriz_B);
 
-    /*Debug*/
-    imprimirMatriz(matriz_nos, linhas_Y, 5);
-    printf("\n");
+    /*Testes e Debug*/
+   /* imprimirMatriz(matriz_nos, linhas_Y, 5);*/
+
     imprimirMatriz(matriz_B, linhas_Y, linhas_Y);
     printf("\n");
-    imprimirMatriz(matriz_G, linhas_Y, linhas_Y);
+    trocarLinhasMatriz(matriz_B, 0, 1, linhas_Y);
+    imprimirMatriz(matriz_B, linhas_Y, linhas_Y);
+    /*printf("\n");
+    imprimirMatriz(matriz_G, linhas_Y, linhas_Y);*/
+
+
+    /*Decomposicao LU*/
+    /*permutacoes = int(linhas_Y/2);
+    vetor_permut = criarVetorDinamico(permutacoes);*/
+
+
 
     /*Desalocacao de memoria*/
 
@@ -60,6 +75,14 @@ int main() {
 
 
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Funcoes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+double* criarVetorDinamico(int N) {
+    double *Vetor;
+
+    Vetor = (double*) calloc(N, sizeof(double));
+
+    return Vetor;
+}
 
 double** criarMatrizDinamica(int m, int n) {
     double **matriz;
@@ -114,6 +137,16 @@ void imprimirMatriz(double** Matriz, int linhas, int colunas) {
             }
         }
         printf("|\n");
+    }
+}
+
+void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N) {
+    double temp;
+    int k;
+    for (k = 0; k < N; k++){
+        temp = Matriz[i1][k];
+        Matriz[i1][k] = Matriz[i2][k];
+        Matriz[i2][k] = temp;
     }
 }
 
@@ -181,4 +214,54 @@ double** criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **
 
     fclose(arquivo);
 
+}
+
+double** decomporLU(double **matriz_A, int N, int *vetor_permut) {
+    /* Implementacao do algritmo fornecido pelo enunciado*/
+
+    int k, i, j, l, t;
+    double somatorio = 0;
+    double** matriz_LU;
+
+    /*Copia da matriz de entrada para a matriz que sera decomposta*/
+    matriz_LU = criarMatrizDinamica(N, N);
+    for(i = 0; i < N; i++){
+        for (j = 0; j < N; j++){
+            matriz_LU[i][j] = matriz_A[i][j];
+        }
+    }
+
+    for (k = 0; k < N; k++){
+        for (i = k; i < N; i++){
+            for (j = 0; j < (k-1); j++) {
+                somatorio += matriz_LU[i][j]*matriz_LU[j][k];
+            }
+            matriz_LU[i][k] = matriz_LU[i][k] - somatorio;
+            somatorio = 0;
+        }
+
+        l = k;
+        for (t = l+1; t < N; t++){
+            if (matriz_LU[t][k] > matriz_LU[l][k]){
+                l = t;
+            }
+        }
+
+        vetor_permut[k] = l;
+        if (l != k){
+            trocarLinhasMatriz(matriz_LU, l, k, N);
+        }
+        for (j = k+1; j < N; j++){
+
+            for (i = 0; i < k-1; i++){
+                somatorio += matriz_LU[k][i]*matriz_LU[i][j];
+            }
+
+            matriz_LU[k][j] =  matriz_LU[k][j] - somatorio;
+            matriz_LU[j][k] =  matriz_LU[j][k]/matriz_LU[k][k];
+            somatorio = 0;
+        }
+    }
+
+    return matriz_LU;
 }
