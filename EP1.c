@@ -13,12 +13,13 @@
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Declaracao de funcoes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 double** criarMatrizDinamica(int m, int n);
 double* criarVetorDinamico(int N);
-double** criarMatrizBarras(char* nome_arquivo, int *linhas, int *colunas);
+double** criarMatrizBarras(char* nome_arquivo, int *linhas);
 double** criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matriz_B);
 void imprimirMatriz(double** Matriz, int linhas, int colunas);
 void destruirMatriz(double** Matriz, int linhas);
 void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N) ;
 double** decomporLU(double **matriz_A, int N, int *vetor_permut);
+double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int *vetor_permut);
 
 
 /* -------------------------------------------------------------------------------------*/
@@ -26,49 +27,86 @@ double** decomporLU(double **matriz_A, int N, int *vetor_permut);
 int main() {
     /* Declaracao de variaveis */
     char nome_arquivo[128]; /*Nome do arquivo a ser fornecido pelo usuario*/
-    int linhas_Y, colunas_Y;
-    double** matriz_nos;
+    int numero_barras; /*Quantidade de barras = quantidade de linhas e colunas da matriz de admitâncias*/
+    int tipo_barra; /*0 = PQ; 1 = PV; 3 = Swing*/
+    double** matriz_nos; /*Matriz de dados das barras, chamada de matriz de nos para evitar confusao com matriz_B*/
     double** matriz_G; /*Matriz de Condutancias*/
     double** matriz_B; /*Matriz de Susceptancias*/
-    int permutacoes;
-    int* vetor_permut;
+    int N1, N2, N3; /*Numero de barras PQ, PV e Swing, respectivamente*/
+    int permutacoes; /*Numero de permutacoes possiveis dado o tamanho de uma matriz quadrada*/
+    int* vetor_permut; /*Vetor de permutacoes usado na decomposicao LU*/
+    int j; /* Cada barra*/
+    int k; /*Variavel auxiliar das iteracoes*/
+    double* Pcalc; /*Vetor de Potencias ativas calculadas em cada barra*/
+    double* Qcalc; /*Vetor de Potencias reativas calculadas em cada barra*/
+    double teta_kj = 0; /*Ainda no aguardo de descobrir o que é - supondo Vk - Vj*/
+    /*double somatorio; Variavel auxiliar de somatorios*/
 
     /*Execução do codigo*/
 
     /*Leitura do arquivo de barras e criacao da matriz de barras*/
     printf("Digite o nome do arquivo de barras (com a terminacao .txt): ");
     scanf("%s", nome_arquivo);
-    matriz_nos = criarMatrizBarras(nome_arquivo, &linhas_Y, &colunas_Y);
+    matriz_nos = criarMatrizBarras(nome_arquivo, &numero_barras);
 
     /*Leitura do arquivo de barras e criacao da matriz de admitancias*/
     printf("Digite o nome do arquivo da matriz de admitancias nodais (com a terminacao .txt): ");
     scanf("%s", nome_arquivo);
-    matriz_B = criarMatrizDinamica(linhas_Y, colunas_Y);
-    matriz_G = criarMatrizDinamica(linhas_Y, colunas_Y);
+    matriz_B = criarMatrizDinamica(numero_barras, numero_barras);
+    matriz_G = criarMatrizDinamica(numero_barras, numero_barras);
     criarMatrizAdmitancias(nome_arquivo, matriz_G, matriz_B);
 
-    /*Testes e Debug*/
-   /* imprimirMatriz(matriz_nos, linhas_Y, 5);*/
+    N1 = 0;
+    N2 = 0;
+    N3 = 0;
+    
+    Pcalc = criarVetorDinamico(numero_barras);
+    for (j = 0; j < numero_barras; j++){
+        tipo_barra = matriz_nos[j][1];
+        switch(tipo_barra){
+            case 0: 
+                N1+=1;
+                for(k = 0; k < numero_barras; k++){
+                    Pcalc[j] += matriz_nos[j][2]*matriz_nos[k][2]*(matriz_G[j][k]*cos(teta_kj) - matriz_B[j][k]*sin(teta_kj));
+                    Qcalc[j] -= matriz_nos[j][2]*matriz_nos[k][2]*(matriz_G[j][k]*sin(teta_kj) + matriz_B[j][k]*cos(teta_kj));
+                }
+                break;
 
-    imprimirMatriz(matriz_B, linhas_Y, linhas_Y);
+            case 1:
+                N2+=1;
+                break;
+                
+            case 2:
+                N3+=1;
+                break;
+            default :
+                printf ("Tipo de barra nao definido\n");
+        }
+    }
+
+    /*Testes e Debug*/
+   /* imprimirMatriz(matriz_nos, numero_barras, 5);*/
+
+    imprimirMatriz(matriz_B, numero_barras, numero_barras);
     printf("\n");
-    trocarLinhasMatriz(matriz_B, 0, 1, linhas_Y);
-    imprimirMatriz(matriz_B, linhas_Y, linhas_Y);
+    trocarLinhasMatriz(matriz_B, 0, 1, numero_barras);
+    imprimirMatriz(matriz_B, numero_barras, numero_barras);
     /*printf("\n");
-    imprimirMatriz(matriz_G, linhas_Y, linhas_Y);*/
+    imprimirMatriz(matriz_G, numero_barras, numero_barras);*/
 
 
     /*Decomposicao LU*/
-    /*permutacoes = int(linhas_Y/2);
+    /*permutacoes = int(numero_barras/2);
     vetor_permut = criarVetorDinamico(permutacoes);*/
 
 
 
     /*Desalocacao de memoria*/
-
-    destruirMatriz(matriz_nos, linhas_Y);
-    destruirMatriz(matriz_B, linhas_Y);
-    destruirMatriz(matriz_G, linhas_Y);
+    free(Pcalc);
+    // free(vetor_permut);
+    destruirMatriz(matriz_nos, numero_barras);
+    destruirMatriz(matriz_B, numero_barras);
+    destruirMatriz(matriz_G, numero_barras);
 
     return 0;
 }
@@ -150,7 +188,7 @@ void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N) {
     }
 }
 
-double** criarMatrizBarras(char *nome_arquivo, int *linhas, int *colunas) {
+double** criarMatrizBarras(char *nome_arquivo, int *linhas) {
     char linha[512]; /*Precisa mesmo ser 512?*/
     int numero_barras; /*Quantidade total de barras (nos)*/
     int id_barra; /*Numero da barra*/
@@ -171,8 +209,7 @@ double** criarMatrizBarras(char *nome_arquivo, int *linhas, int *colunas) {
 
     fscanf(arquivo, "%d\n", &numero_barras);
 
-    *linhas = numero_barras;
-    *colunas = numero_barras; /*Dados que serão usados externamente*/
+    *linhas = numero_barras; /*Dado que sera usado externamente*/
 
     matriz = criarMatrizDinamica(numero_barras, cols);
     i = 0;
@@ -265,3 +302,63 @@ double** decomporLU(double **matriz_A, int N, int *vetor_permut) {
 
     return matriz_LU;
 }
+
+double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int *vetor_permut) {
+    /*Dada uma matriz LU enxertada com o vetor solução b, devolve o vetor
+    de soluções x */
+    double *y; /*vetor de incognitas: Ly = b */
+    double *x; /*vetor de incognitas Ux = y*/
+    double soma, temp; /*variaveis auxiliares*/
+    int i, j; /*variaveis auxiliares*/
+    int k; /*variavel auxiliar do vetor_permut*/
+
+    /* Armazena em k o tamanho do vetor_permut*/
+    k = sizeof(vetor_permut);
+
+    /*Permuta o vetor de solucoes com as permutacoes definidas pelo vetor_permut*/
+    for(i = 0; i < k; i++){
+        temp = vetor_b[0];
+        j = vetor_permut[i];
+        vetor_b[0] = vetor_b[j];
+        vetor_b[j] = temp;
+    }
+
+    /*Enxerta o vetor de solucoes na matriz_LU*/
+    for(i = 0; i<m; i++){
+        matriz_LU[i] = realloc(matriz_LU[i], (n+1) * sizeof (double));
+        matriz_LU[i][n] = vetor_b[i];
+    }
+
+    /*Resolve a parte L, achando o vetor de incognitas y*/
+    y = criarVetorDinamico(m);
+    
+    y[0] = matriz_LU[0][n-1];
+    for(i = 1; i < m; i++){
+        soma = 0;
+        for (j=i-1; j>=0; j--){
+            soma += matriz_LU[i][j]*y[j];
+        }
+        y[i] = (matriz_LU[i][n-1] - soma);
+    }
+
+    /*Substitui o vetor de solucoes b por y*/
+    for (i = 0; i < m; i++){
+        matriz_LU[i][n-1] = y[i];
+    }
+    free(y); /*Desaloca a memoria de y, que ja foi usado*/
+
+    /*Resolve a parte U*/
+    x = criarVetorDinamico(m);
+    x[m-1] = matriz_LU[m-1][n-1]/matriz_LU[m-1][n-2];
+
+    for(i = m-2; i>=0; i--) {
+        soma = 0;
+        for(j = i+1; j<(n-1); j++){
+            soma += matriz_LU[i][j]*x[j];
+        }
+        x[i] = (matriz_LU[i][n-1] - soma)/matriz_LU[i][i];
+    }
+    return x;
+
+}
+
