@@ -90,7 +90,6 @@ int main() {
 
 
     /*Desalocacao de memoria*/
-    free(Pcalc);
     // free(vetor_permut);
     destruirMatriz(matriz_nos, numero_barras);
     destruirMatriz(matriz_B, numero_barras);
