@@ -36,11 +36,6 @@ int main() {
     int permutacoes; /*Numero de permutacoes possiveis dado o tamanho de uma matriz quadrada*/
     int* vetor_permut; /*Vetor de permutacoes usado na decomposicao LU*/
     int j; /* Cada barra*/
-    int k; /*Variavel auxiliar das iteracoes*/
-    double* Pcalc; /*Vetor de Potencias ativas calculadas em cada barra*/
-    double* Qcalc; /*Vetor de Potencias reativas calculadas em cada barra*/
-    double teta_kj = 0; /*Ainda no aguardo de descobrir o que é - supondo Vk - Vj*/
-    /*double somatorio; Variavel auxiliar de somatorios*/
 
     /*Execução do codigo*/
 
@@ -56,26 +51,19 @@ int main() {
     matriz_G = criarMatrizDinamica(numero_barras, numero_barras);
     criarMatrizAdmitancias(nome_arquivo, matriz_G, matriz_B);
 
+    /*Contagem da quantidade N de cada tipo de barra - nao sei se tem utilidade pratica ainda*/
     N1 = 0;
     N2 = 0;
     N3 = 0;
-    
-    Pcalc = criarVetorDinamico(numero_barras);
     for (j = 0; j < numero_barras; j++){
         tipo_barra = matriz_nos[j][1];
         switch(tipo_barra){
             case 0: 
                 N1+=1;
-                for(k = 0; k < numero_barras; k++){
-                    Pcalc[j] += matriz_nos[j][2]*matriz_nos[k][2]*(matriz_G[j][k]*cos(teta_kj) - matriz_B[j][k]*sin(teta_kj));
-                    Qcalc[j] -= matriz_nos[j][2]*matriz_nos[k][2]*(matriz_G[j][k]*sin(teta_kj) + matriz_B[j][k]*cos(teta_kj));
-                }
                 break;
-
             case 1:
                 N2+=1;
                 break;
-                
             case 2:
                 N3+=1;
                 break;
