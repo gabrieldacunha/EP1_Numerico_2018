@@ -201,7 +201,7 @@ void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int 
         }
 
     }
-    
+
     fclose(arquivo);
 
     /* Cria as matrizes de cada barra de acordo com o tamanho verificado */
@@ -216,18 +216,18 @@ void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int 
 
     FILE *arquivo2 = fopen(nome_arquivo, "r");
 
-    if(arquivo == NULL) {
+    if(arquivo2 == NULL) {
         printf("\nArquivo nao encontrado\n");
         exit(EXIT_FAILURE);
     }
 
-    *linhas = fscanf(arquivo, "%d\n", &numero_barras);
+    *linhas = fscanf(arquivo2, "%d\n", &numero_barras);
     i = 0;
     j = 0;
     k = 0;
 
     /* Preenchimento das matrizes com os dados do arquivo */
-    while(fgets(linha, sizeof(linha), arquivo) != NULL) { /* pega uma linha de até 512 caracteres. Null quando acabar as linhas */
+    while(fgets(linha, sizeof(linha), arquivo2) != NULL) { /* pega uma linha de até 512 caracteres. Null quando acabar as linhas */
         sscanf(linha, "%d %d %le %le %le", &id_barra, &tipo_barra, &tensao_nominal, &parametro_1, &parametro_2);
 
         switch(tipo_barra) {
