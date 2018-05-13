@@ -33,9 +33,9 @@ int main() {
     double** matriz_nos; /* Matriz de dados das barras, chamada de matriz de nos para evitar confusao com matriz_B */
     double** matriz_G; /* Matriz de Condutancias */
     double** matriz_B; /* Matriz de Susceptancias */
-    double** barras_PQ; /* Matriz reunindo todas as barras PQ do arquivo de dados de barras */
-    double** barras_PV; /* Matriz reunindo todas as barras PV do arquivo de dados de barras */
-    double** barras_swing; /* Matriz reunindo todas as barras Swing do arquivo de dados de barras */
+    double** matriz_PQ; /* Matriz reunindo todas as barras PQ do arquivo de dados de barras */
+    double** matriz_PV; /* Matriz reunindo todas as barras PV do arquivo de dados de barras */
+    double** matriz_swing; /* Matriz reunindo todas as barras Swing do arquivo de dados de barras */
     int N1, N2, N3; /* Numero de barras PQ, PV e Swing, respectivamente */
     int tamanho_sistema; /* Dimensao do sistema linear de equacoes a ser resolvido */
     int permutacoes; /* Numero de permutacoes possiveis dado o tamanho de uma matriz quadrada */
@@ -77,6 +77,8 @@ int main() {
     vetor_solucao = criarVetorDinamico(tamanho_sistema);
 
     /* Preenche o sistema linear */
+    int barra;
+    int i;
 
     /* Se a barra for PQ */
 
@@ -89,7 +91,7 @@ int main() {
         somatorio_4 = 0;
 
        /* Iterando com as outras barras PQ */
-        for(i=0; i < N1; i++) {
+        for(i = 0; i < N1; i++) {
             k = matriz_PQ[i][0]; /* k armazena o numero da barra em questao */
             if(k != j) {
                 /* Preenchimento da primeira metade do quadrante 1 da matriz jacobiana - Derivada parcial de fpj em função de Theta k (barras PQ) */
