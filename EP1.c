@@ -45,13 +45,14 @@ int main() {
     double** matriz_jacobiana; /* Matriz jacobiana de derivadas parciais */
     double* vetor_delta; /* Vetor de incognitas do sistema */
     double* vetor_solucao; /* Vetor de desvios calculados (fp e fq) */
-    double somatorio; /* Variavel auxiliar para os somatorios da matriz jacobiana */
+    double somatorio_1, somatorio_2, somatorio_3, somatorio_4; /* Variavel auxiliar para os somatorios da matriz jacobiana */
     double erro_max; /* Estabelece a tolerancia maxima dos desvios calculados */
     double theta_kj = 0; /* Provisoriamente aqui enquanto não modelo o que é isso direito */
 
     /* Execucao do codigo */
 
     /* Inicializando a quantidade de cada barra */
+
     N1 = 0;
     N2 = 0;
     N3 = 0;
@@ -59,7 +60,7 @@ int main() {
     /* Leitura do arquivo de barras e criacao da matriz de barras */
     printf("Digite o nome do arquivo de barras (com a terminacao .txt): ");
     scanf("%s", nome_arquivo);
-    criarMatrizesBarras(nome_arquivo, &numero_barras, &N1, &N2, &N3, barras_PQ, barras_PV, barras_swing);
+    criarMatrizesBarras(nome_arquivo, &numero_barras, &N1, &N2, &N3, matriz_PQ, matriz_PV, matriz_swing);
 
     /* Leitura do arquivo de barras e criacao da matriz de admitancias */
     printf("Digite o nome do arquivo da matriz de admitancias nodais (com a terminacao .txt): ");
@@ -77,43 +78,74 @@ int main() {
 
     /* Preenche o sistema linear */
 
-    /* Preenchimento do quadrante 1 da matriz jacobiana */
     /* Se a barra for PQ */
-    for (j = 0; j < numero_barras; j++) {
-        somatorio = 0;
 
-        /* Derivada parcial de fpj em função de theta k */
-        for(k=0; k < numero_barras; k++) {
+    for(barra = 0; barra < N1; barra++) {
+        j = matriz_PQ[barra][0]; /* j armazena o numero da barra em questao */
+
+        somatorio_1 = 0;
+        somatorio_2 = 0;
+        somatorio_3 = 0;
+        somatorio_4 = 0;
+
+       /* Iterando com as outras barras PQ */
+        for(i=0; i < N1; i++) {
+            k = matriz_PQ[i][0]; /* k armazena o numero da barra em questao */
             if(k != j) {
-                matriz_jacobiana[j][k] = -1 * matriz_nos[j][2] * matriz_nos[k][2] * (matriz_G[j][k]*cos(theta_kj) + matriz_B[j][k]*sin(theta_kj));
-                somatorio += matriz_nos[k][2] * (matriz_G[j][k]*sin(theta_kj) + matriz_B[j][k]*cos(theta_kj));
+                /* Preenchimento da primeira metade do quadrante 1 da matriz jacobiana - Derivada parcial de fpj em função de Theta k (barras PQ) */
+                matriz_jacobiana[barra][i] = -1 * matriz_PQ[barra][2] * matriz_PQ[i][2] * (matriz_G[j][k] * cos(theta_kj) + matriz_B[j][k] * sin(theta_kj));
+                somatorio_1 += matriz_PQ[i][2] * (matriz_G[j][k] * sin(theta_kj) + matriz_B[j][k] * cos(theta_kj));
+
+                /* Preenchimento do quadrante 2 da matriz jacobiana - Derivada parcial de fpj em função de Vk */
+                matriz_jacobiana[barra][i+N1+N2] = matriz_PQ[barra][2] * (matriz_G[j][k] * cos(theta_kj) - matriz_B[j][k] * sin(theta_kj));
+                somatorio_2 += matriz_PQ[i][2] * (matriz_G[j][k] * cos(theta_kj) - matriz_B[j][k] * sin(theta_kj));
+
+                /* Preenchimento do quadrante 3 da matriz jacobiana - Derivada parcial de fqj em função de Theta k */
+                matriz_jacobiana[barra+N1+N2][i] = -1 * matriz_PQ[barra][2] * matriz_PQ[i][2] * (matriz_G[j][k] * cos(theta_kj) - matriz_B[j][k] * sin(theta_kj));
+                somatorio_3 += matriz_PQ[i][2] * (matriz_G[j][k] * cos(theta_kj) - matriz_B[j][k] * sin(theta_kj));
+
+                /* Preenchimento do quadrante 4 da matriz jacobiana - Derivada parcial de fqj em função de Vk */
+                matriz_jacobiana[barra+N1+N2][i+N1+N2] = -1 * matriz_PQ[barra][2] * (matriz_G[j][k] * sin(theta_kj) + matriz_B[j][k] * cos(theta_kj));
+                somatorio_4 -= matriz_PQ[i][2] * (matriz_G[j][k] * sin(theta_kj) + matriz_B[j][k] * cos(theta_kj));
             }
         }
-        /* Derivada parcial de fpj em função de j */
-        matriz_jacobiana[j][j] = matriz_nos[j][2] * somatorio;
 
-                /* Preenchimento do quadrante 2 da matriz jacobiana */
+        /* Preenchimento da primeira metade do quadrante 1 da matriz jacobiana - Derivada parcial de fpj em função de Theta j */
+        matriz_jacobiana[barra][barra] = matriz_PQ[barra][2] * somatorio_1;
 
-            /* Se a barra for PV */
+        /* Preenchimento do quadrante 2 da matriz jacobiana - Derivada parcial de fpj em função de Vj */
+        matriz_jacobiana[barra][barra+N1+N2] = somatorio_2;
 
-                /* Preenchimento do quadrante 1 da matriz jacobiana */
-                /* Derivada parcial de fpj em função de theta k */
-                for(k=0; k < numero_barras; k++) {
-                    if(k != j) {
-                        matriz_jacobiana[j][k] = -1 * matriz_nos[j][2] * matriz_nos[k][2] * (matriz_G[j][k] * cos(theta_kj) + matriz_B[j][k] * sin(theta_kj));
-                        somatorio += matriz_nos[k][2] * (matriz_G[j][k] * sin(theta_kj) + matriz_B[j][k] * cos(theta_kj));
-                    }
-                }
-                /* Derivada parcial de fpj em função de j */
-                matriz_jacobiana[j][j] = matriz_nos[j][2] * somatorio;
+        /* Preenchimento do quadrante 3 da matriz jacobiana - Derivada parcial de fqj em função de Theta j */
+        matriz_jacobiana[barra+N1+N2][barra] = matriz_PQ[barra][2] * somatorio_3;
 
-
-            /* Se a barra for Swing, ela não contribui com o sistema linear */
-
+        /* Preenchimento do quadrante 4 da matriz jacobiana - Derivada parcial de fqj em função de Vj */
+        matriz_jacobiana[barra+N1+N2][barra+N1+N2] = somatorio_4;
     }
 
+    /* Se a barra for PV */
 
+    for(barra = 0; barra < N2; barra++) {
 
+        j = matriz_PV[barra][0]; /* j armazena o numero da barra em questao */
+        somatorio_1 = 0;
+
+        /* Iterando com as outras barras PV */
+        for(i=0; i < N2; i++) {
+            k = matriz_PV[i][0]; /* k armazena o numero da barra em questao */
+
+            if(k != j) {
+                /* Preenchimento da segunda metade do quadrante 1 da matriz jacobiana - Derivada parcial de fpj em função de Theta k (Barras PV) */
+                    matriz_jacobiana[barra][i+N1] = - matriz_PV[barra][2] * matriz_PV[i][2] * (matriz_G[j][k] * cos(theta_kj) + matriz_B[j][k] * sin(theta_kj));
+                    somatorio_1 += matriz_PV[i][2] * (matriz_G[j][k] * sin(theta_kj) + matriz_B[j][k] * cos(theta_kj));
+            }
+        }
+
+        /* Preenchimento da segunda metade do quadrante 1 da matriz jacobiana - Derivada parcial de fpj em função de Theta j */
+        matriz_jacobiana[barra][barra+N1] = matriz_PV[barra][2] * somatorio_1;
+    }
+
+    /* Se a barra for Swing, ela não contribui com o sistema linear */
 
     /* Testes e Debug */
     /* imprimirMatriz(matriz_nos, numero_barras, 5); */
