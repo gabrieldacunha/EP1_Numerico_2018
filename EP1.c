@@ -47,7 +47,7 @@ int main() {
     double* vetor_solucao; /* Vetor de desvios calculados (fp e fq) */
     double somatorio_1, somatorio_2, somatorio_3, somatorio_4; /* Variavel auxiliar para os somatorios da matriz jacobiana */
     double erro_max; /* Estabelece a tolerancia maxima dos desvios calculados */
-    double theta_kj = 0; /* Provisoriamente aqui enquanto não modelo o que é isso direito */
+    double theta_kj = 0; /* Provisoriamente aqui enquanto não modelo o que e isso direito */
 
     /* Execucao do codigo */
 
