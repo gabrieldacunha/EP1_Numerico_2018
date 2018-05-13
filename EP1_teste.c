@@ -200,8 +200,8 @@ void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int 
                 printf("Tipo de barra nao definido\n");
         }
 
-        i++;
     }
+    
     fclose(arquivo);
 
     /* Cria as matrizes de cada barra de acordo com o tamanho verificado */
