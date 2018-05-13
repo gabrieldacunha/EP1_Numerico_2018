@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
+#include <string.h>
 
 
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Declaracao de funcoes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
@@ -23,8 +24,8 @@ int main() {
     char nome_arquivo[128]; /* Nome do arquivo a ser fornecido pelo usuario */
     int numero_barras; /* Quantidade de barras = quantidade de linhas e colunas da matriz de admitâncias */
     int tipo_barra; /* 0 => PQ; 1 => PV; 3 => Swing */
-    double** matriz_G; /* Matriz de Condutancias */
-    double** matriz_B; /* Matriz de Susceptancias */
+    //double** matriz_G; /* Matriz de Condutancias */
+    //double** matriz_B; /* Matriz de Susceptancias */
     double** matriz_PQ; /* Matriz reunindo todas as barras PQ do arquivo de dados de barras */
     double** matriz_PV; /* Matriz reunindo todas as barras PV do arquivo de dados de barras */
     double** matriz_swing; /* Matriz reunindo todas as barras Swing do arquivo de dados de barras */
@@ -52,7 +53,7 @@ int main() {
     /* Leitura do arquivo de barras e criacao da matriz de barras */
     printf("Digite o nome do arquivo de barras (com a terminacao .txt): ");
     //scanf("%s", nome_arquivo);
-    nome_arquivo = "Redes_fornecidas/1_Stevenson/1_Stevenson_DadosBarras.txt";
+    strcpy(nome_arquivo, "Redes_fornecidas/1_Stevenson/1_Stevenson_DadosBarras.txt"); /* https://stackoverflow.com/questions/32313150/array-type-char-is-not-assignable */
     criarMatrizesBarras(nome_arquivo, &numero_barras, &N1, &N2, &N3, matriz_PQ, matriz_PV, matriz_swing);
     printf("Teste\n");
 
@@ -66,11 +67,16 @@ int main() {
 
 
     // free(vetor_permut);
-    destruirMatriz(matriz_B, numero_barras);
-    destruirMatriz(matriz_G, numero_barras);
+    //destruirMatriz(matriz_B, numero_barras);
+    //printf("Matriz_B: check\n");
+    //destruirMatriz(matriz_G, numero_barras);
+    //printf("Matriz_G: check\n");
     destruirMatriz(matriz_PQ, N1);
+    printf("Matriz_PQ: check\n");
     destruirMatriz(matriz_PV, N2);
+    printf("Matriz_PV: check\n");
     destruirMatriz(matriz_swing, N3);
+    printf("Matriz_swing: check\n");
 
     return 0;
 }
