@@ -122,8 +122,8 @@ int main() {
         matriz_jacobiana[barra+N1+N2][barra+N1+N2] = somatorio_4;
 
         /*Preenchimento do vetor solucao*/
-        vetor_solucao[barra] = matriz_jacobiana[barra+N1+N2][barra] = matriz_PQ[barra][2] * somatorio_3; /* = Pcalc*/
-        vetor_solucao[barra+N1+N2] = -1*matriz_PQ[barra][2] * somatorio_1; /* Qcalc */
+        vetor_solucao[barra] = -1* matriz_PQ[barra][2] * somatorio_3; /* = -Pcalc*/
+        vetor_solucao[barra+N1+N2] = matriz_PQ[barra][2] * somatorio_1; /* -Qcalc */
 
     }
 
@@ -148,7 +148,7 @@ int main() {
         matriz_jacobiana[barra+N1][barra+N1] = matriz_PV[barra][2] * somatorio_1;
 
         /* Preenchimento do vetor solucao */
-        vetor_solucao[barra+N1] = matriz_PV[barra][2] * somatorio_2 - matriz_PV[barra][3]; /* Pcalc - Pesp */
+        vetor_solucao[barra+N1] = -1* (matriz_PV[barra][2] * somatorio_2 - matriz_PV[barra][3]); /* -(Pcalc - Pesp) */
 
     }
 
