@@ -24,11 +24,11 @@ int main() {
     char nome_arquivo[128]; /* Nome do arquivo a ser fornecido pelo usuario */
     int numero_barras; /* Quantidade de barras = quantidade de linhas e colunas da matriz de admitâncias */
     int tipo_barra; /* 0 => PQ; 1 => PV; 3 => Swing */
-    //double** matriz_G; /* Matriz de Condutancias */
-    //double** matriz_B; /* Matriz de Susceptancias */
-    double** matriz_PQ; /* Matriz reunindo todas as barras PQ do arquivo de dados de barras */
-    double** matriz_PV; /* Matriz reunindo todas as barras PV do arquivo de dados de barras */
-    double** matriz_swing; /* Matriz reunindo todas as barras Swing do arquivo de dados de barras */
+    double** matriz_G; /* Matriz de Condutancias */
+    double** matriz_B; /* Matriz de Susceptancias */
+    // double** matriz_PQ; /* Matriz reunindo todas as barras PQ do arquivo de dados de barras */
+    // double** matriz_PV; /* Matriz reunindo todas as barras PV do arquivo de dados de barras */
+    // double** matriz_swing; /* Matriz reunindo todas as barras Swing do arquivo de dados de barras */
     int N1, N2, N3; /* Numero de barras PQ, PV e Swing, respectivamente */
     int tamanho_sistema; /* Dimensao do sistema linear de equacoes a ser resolvido */
     int permutacoes; /* Numero de permutacoes possiveis dado o tamanho de uma matriz quadrada */
@@ -54,29 +54,40 @@ int main() {
     printf("Digite o nome do arquivo de barras (com a terminacao .txt): ");
     //scanf("%s", nome_arquivo);
     strcpy(nome_arquivo, "Redes_fornecidas/1_Stevenson/1_Stevenson_DadosBarras.txt"); /* https://stackoverflow.com/questions/32313150/array-type-char-is-not-assignable */
-    criarMatrizesBarras(nome_arquivo, &numero_barras, &N1, &N2, &N3, matriz_PQ, matriz_PV, matriz_swing);
-    printf("Teste\n");
+    //criarMatrizesBarras(nome_arquivo, &numero_barras, &N1, &N2, &N3, matriz_PQ, matriz_PV, matriz_swing);
 
+    int lin = 5;
     int cols = 5;
-    printf("N1 = %d\n", N1);
-    printf("N2 = %d\n", N2);
-    printf("N3 = %d\n", N3);
+    // printf("N1 = %d\n", N1);
+    // printf("N2 = %d\n", N2);
+    // printf("N3 = %d\n", N3);
+    // printf("\nMatriz_PQ:\n");
     // imprimirMatriz(matriz_PQ, N1, cols);
+    // printf("\nMatriz_PV:\n");
     // imprimirMatriz(matriz_PV, N1 + N2, cols);
+    // printf("\nMatriz_swing:\n");
     // imprimirMatriz(matriz_swing, N3, cols);
+
+    strcpy(nome_arquivo, "Redes_fornecidas/1_Stevenson/1_Stevenson_Ynodal.txt");
+    criarMatrizAdmitancias(nome_arquivo, matriz_G, matriz_B);
+
+    printf("\nMatriz_G:\n");
+    imprimirMatriz(matriz_G, lin, cols);
+    printf("\nMatriz_B:\n");
+    imprimirMatriz(matriz_B, lin, cols);
 
 
     // free(vetor_permut);
-    //destruirMatriz(matriz_B, numero_barras);
-    //printf("Matriz_B: check\n");
-    //destruirMatriz(matriz_G, numero_barras);
-    //printf("Matriz_G: check\n");
-    destruirMatriz(matriz_PQ, N1);
-    printf("Matriz_PQ: check\n");
-    destruirMatriz(matriz_PV, N2);
-    printf("Matriz_PV: check\n");
-    destruirMatriz(matriz_swing, N3);
-    printf("Matriz_swing: check\n");
+    destruirMatriz(matriz_B, numero_barras);
+    printf("Matriz_B: check\n");
+    destruirMatriz(matriz_G, numero_barras);
+    printf("Matriz_G: check\n");
+    // destruirMatriz(matriz_PQ, N1);
+    // printf("Matriz_PQ: check\n");
+    // destruirMatriz(matriz_PV, N2);
+    // printf("Matriz_PV: check\n");
+    // destruirMatriz(matriz_swing, N3);
+    // printf("Matriz_swing: check\n");
 
     return 0;
 }
@@ -199,8 +210,6 @@ void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int 
             default:
                 printf("Tipo de barra nao definido\n");
         }
-
-        i++;
     }
     fclose(arquivo);
 
@@ -258,7 +267,7 @@ void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int 
                 k++;
                 break;
             default:
-                printf ("Tipo de barra nao definido\n");
+                printf("Tipo de barra nao definido\n");
         }
     }
     fclose(arquivo2);

@@ -300,8 +300,6 @@ void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int 
             default:
                 printf("Tipo de barra nao definido\n");
         }
-
-        i++;
     }
     fclose(arquivo);
 
