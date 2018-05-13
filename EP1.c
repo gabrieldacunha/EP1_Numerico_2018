@@ -14,7 +14,8 @@
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Declaracao de funcoes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 double** criarMatrizDinamica(int m, int n);
 double* criarVetorDinamico(int N);
-void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3, double **barras_PQ, double **barras_PV, double **barras_swing);
+void obterDadosBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3);
+void criarMatrizesBarras(char *nome_arquivo, double **barras_PQ, double **barras_PV, double **barras_swing );
 void criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matriz_B);
 void imprimirMatriz(double** Matriz, int linhas, int colunas);
 void destruirMatriz(double** Matriz, int linhas);
@@ -60,15 +61,21 @@ int main() {
     /* Leitura do arquivo de barras e criacao da matriz de barras */
     printf("Digite o nome do arquivo de barras (com a terminacao .txt): ");
     scanf("%s", nome_arquivo);
-    criarMatrizesBarras(nome_arquivo, &numero_barras, &N1, &N2, &N3, matriz_PQ, matriz_PV, matriz_swing);
-
+    obterDadosBarras(nome_arquivo, &numero_barras, &N1, &N2, &N3);
+    matriz_PQ = criarMatrizDinamica(N1, 5);
+    matriz_PV = criarMatrizDinamica(N2, 5);
+    matriz_swing = criarMatrizDinamica(N3, 5);
+    criarMatrizesBarras(nome_arquivo, matriz_PQ, matriz_PV, matriz_swing);
+    printf("ok");
+    imprimirMatriz(matriz_PQ, N1, 5);
+    imprimirMatriz(matriz_PV, N2, 5);
+    imprimirMatriz(matriz_swing, N3, 5);
     /* Leitura do arquivo de barras e criacao da matriz de admitancias */
     printf("Digite o nome do arquivo da matriz de admitancias nodais (com a terminacao .txt): ");
     scanf("%s", nome_arquivo);
     matriz_B = criarMatrizDinamica(numero_barras, numero_barras);
     matriz_G = criarMatrizDinamica(numero_barras, numero_barras);
     criarMatrizAdmitancias(nome_arquivo, matriz_G, matriz_B);
-
 
     /* Dimensiona o sistema linear a ser resolvido */
     tamanho_sistema = 2 * N1 + N2;
@@ -254,7 +261,7 @@ void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N) {
 }
 
 
-void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3, double **barras_PQ, double **barras_PV, double **barras_swing ) {
+void obterDadosBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3) {
     char linha[512]; /* Precisa mesmo ser 512? */
     int numero_barras; /* Quantidade total de barras (nos) */
     int id_barra; /* Numero da barra */
@@ -299,30 +306,37 @@ void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int 
 
     fclose(arquivo);
 
-    /* Cria as matrizes de cada barra de acordo com o tamanho verificado */
-    barras_PQ = criarMatrizDinamica(i, cols);
-    barras_PV = criarMatrizDinamica(j, cols);
-    barras_swing = criarMatrizDinamica(k, cols);
-
     /*Passa os valores para variáveis externas*/
     *N1 = i;
     *N2 = j;
     *N3 = k;
 
-    FILE *arquivo2 = fopen(nome_arquivo, "r");
+}
 
-    if(arquivo2 == NULL) {
+void criarMatrizesBarras(char *nome_arquivo, double **barras_PQ, double **barras_PV, double **barras_swing ) {
+    char linha[512]; /* Precisa mesmo ser 512? */
+    int numero_barras; /* Quantidade total de barras (nos) */
+    int id_barra; /* Numero da barra */
+    int tipo_barra; /* 0 => PQ; 1 => PV; 2 => Swing */
+    double tensao_nominal; /* Tensao nominal de fase */
+    double parametro_1; /* PQ: P absorvida nominal; PV: P de geracao; Swing: modulo da tensao */
+    double parametro_2; /* PQ: Q absorvida nominal; PV: modulo da tensao; Swing: fase da tensao */
+    int i, j, k; /* Variaveis auxiliares */
+
+    FILE *arquivo = fopen(nome_arquivo, "r");
+
+    if(arquivo == NULL) {
         printf("\nArquivo nao encontrado\n");
         exit(EXIT_FAILURE);
     }
 
-    *linhas = fscanf(arquivo2, "%d\n", &numero_barras);
+    fscanf(arquivo, "%d\n", &numero_barras);
     i = 0;
     j = 0;
     k = 0;
 
     /* Preenchimento das matrizes com os dados do arquivo */
-    while(fgets(linha, sizeof(linha), arquivo2) != NULL) { /* pega uma linha de até 512 caracteres. Null quando acabar as linhas */
+    while(fgets(linha, sizeof(linha), arquivo) != NULL) { /* pega uma linha de até 512 caracteres. Null quando acabar as linhas */
         sscanf(linha, "%d %d %le %le %le", &id_barra, &tipo_barra, &tensao_nominal, &parametro_1, &parametro_2);
 
         switch(tipo_barra) {
@@ -356,7 +370,7 @@ void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int 
                 printf ("Tipo de barra nao definido\n");
         }
     }
-    fclose(arquivo2);
+    fclose(arquivo);
 
 }
 
