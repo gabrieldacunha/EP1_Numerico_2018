@@ -33,7 +33,7 @@ int main() {
     double** matriz_G; /* Matriz de Condutancias */
     double** matriz_B; /* Matriz de Susceptancias */
     double** matriz_PQ; /* Matriz reunindo todas as barras PQ do arquivo de dados de barras */
-    double** matriz_PV; /* Matriz reunindo todas as barras PV do arquivo de dados de barras */
+    double** matriz_PQPV; /* Matriz reunindo todas as barras PQ e PV do arquivo de dados de barras */
     double** matriz_swing; /* Matriz reunindo todas as barras Swing do arquivo de dados de barras */
     int N1, N2, N3; /* Numero de barras PQ, PV e Swing, respectivamente */
     int tamanho_sistema; /* Dimensao do sistema linear de equacoes a ser resolvido */
@@ -241,7 +241,7 @@ void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N) {
 }
 
 
-void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3, double **barras_PQ, double **barras_PV, double **barras_swing ) {
+void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3, double **barras_PQ, double **barras_PQPV, double **barras_swing ) {
     char linha[512]; /* Precisa mesmo ser 512? */
     int numero_barras; /* Quantidade total de barras (nos) */
     int id_barra; /* Numero da barra */
