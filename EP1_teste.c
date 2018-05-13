@@ -1,10 +1,3 @@
-/* EP1 - Metodos Numericos - MAP3121
- *
- * Daniel Lavedonio de Lima   - No USP: 8992882 - Turma 2
- * Gabriel da Cunha Rodrigues - No USP: 8992930 - Turma 2
- *
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -58,120 +51,20 @@ int main() {
 
     /* Leitura do arquivo de barras e criacao da matriz de barras */
     printf("Digite o nome do arquivo de barras (com a terminacao .txt): ");
-    scanf("%s", nome_arquivo);
+    //scanf("%s", nome_arquivo);
+    nome_arquivo = "Redes_fornecidas/1_Stevenson/1_Stevenson_DadosBarras.txt";
     criarMatrizesBarras(nome_arquivo, &numero_barras, &N1, &N2, &N3, matriz_PQ, matriz_PV, matriz_swing);
+    printf("Teste\n");
 
-    /* Leitura do arquivo de barras e criacao da matriz de admitancias */
-    printf("Digite o nome do arquivo da matriz de admitancias nodais (com a terminacao .txt): ");
-    scanf("%s", nome_arquivo);
-    matriz_B = criarMatrizDinamica(numero_barras, numero_barras);
-    matriz_G = criarMatrizDinamica(numero_barras, numero_barras);
-    criarMatrizAdmitancias(nome_arquivo, matriz_G, matriz_B);
-
-
-    /* Dimensiona o sistema linear a ser resolvido */
-    tamanho_sistema = 2 * N1 + N2;
-    matriz_jacobiana = criarMatrizDinamica(tamanho_sistema, tamanho_sistema);
-    vetor_delta = criarVetorDinamico(tamanho_sistema);
-    vetor_solucao = criarVetorDinamico(tamanho_sistema);
-
-    /* Preenche o sistema linear */
-
-    /* Para barras PQ */
-    for(barra = 0; barra < N1; barra++) {
-         j = matriz_PQ[barra][0]; /* j armazena o numero da barra em questao */
-
-        somatorio_1 = 0;
-        somatorio_2 = 0;
-        somatorio_3 = 0;
-        somatorio_4 = 0;
-
-        for(i=0; i < N1; i++) {
-            k = matriz_PQ[i][0]; /*k armazena o numero da barra em questao*/
-            if(k != j){
-                /* Preenchimento do quadrante 1 do quadrante 1 da matriz jacobiana - quadrantes 2 e 3 serao nulos */
-                matriz_jacobiana[barra][i] = -1 * matriz_PQ[barra][2] * matriz_PQ[i][2] * (matriz_G[j][k] * cos(vetor_delta[i]-vetor_delta[barra]) + matriz_B[j][k] * sin(vetor_delta[i] - vetor_delta[barra]));
-                somatorio_1 += matriz_PQ[i][2] * (matriz_G[j][k]*sin(vetor_delta[i] - vetor_delta[barra]) + matriz_B[j][k] * cos(vetor_delta[i] - vetor_delta[barra]));
-
-                /* Preenchimento do quadrante 2 da matriz jacobiana - A metade inferior será nula */
-                /* Derivada parcial de fpj em função de Vk */
-                matriz_jacobiana[barra][i+N1+N2] = matriz_PQ[barra][2] * (matriz_G[j][k] * cos(vetor_delta[i+N1+N2]-vetor_delta[barra+N1+N2]) - matriz_B[j][k] * sin(vetor_delta[i+N1+N2] - vetor_delta[barra+N1+N2]));
-                somatorio_2 += matriz_PQ[i][2] * (matriz_G[j][k]*cos(vetor_delta[i+N1+N2] - vetor_delta[barra+N1+N2]) - matriz_B[j][k] * sin(vetor_delta[i+N1+N2] - vetor_delta[barra+N1+N2]));
-
-                /* Preenchimento do quadrante 3 da matriz jacobiana - a metade direita será nula */
-                /* Derivada parcial de fqj em função de Theta k */
-                matriz_jacobiana[barra+N1+N2][i] = -1 * matriz_PQ[barra][2] * matriz_PQ[i][2] * (matriz_G[j][k] * cos(vetor_delta[i]-vetor_delta[barra]) - matriz_B[j][k] * sin(vetor_delta[i] - vetor_delta[barra]));
-                somatorio_3 += matriz_PQ[i][2] * (matriz_G[j][k] * cos(vetor_delta[i] - vetor_delta[barra]) - matriz_B[j][k] * sin(vetor_delta[i] - vetor_delta[barra]));
-
-                /* Preenchimento do quadrante 4 da matriz jacobiana - Derivada parcial de fqj em função de Vk */
-                matriz_jacobiana[barra+N1+N2][i+N1+N2] = -1*matriz_PQ[barra][2] * (matriz_G[j][k]*sin(vetor_delta[i]-vetor_delta[barra]) + matriz_B[j][k] * cos(vetor_delta[i] - vetor_delta[barra]));
-                somatorio_4 -= matriz_PQ[i][2] * (matriz_G[j][k] * sin(vetor_delta[i] - vetor_delta[barra]) + matriz_B[j][k] * cos(vetor_delta[i] - vetor_delta[barra]));
-            }
-        }
-
-        /* Quadrante 1 - Derivada parcial de fpj em função de Theta j */
-        matriz_jacobiana[barra][barra] = matriz_PQ[barra][2] * somatorio_1; /* = -Qcalc */
-
-        /* Quadrante 2 - Derivada parcial de fpj em função de Vj */
-        matriz_jacobiana[barra][barra+N1+N2] = somatorio_2;
-
-        /* Quadrante 3 - Derivada parcial de fqj em função de Theta j */
-        matriz_jacobiana[barra+N1+N2][barra] = matriz_PQ[barra][2] * somatorio_3; /* = Pcalc */
-
-        /* Quadrante 4 - Derivada parcial de fqj em função de Vj */
-        matriz_jacobiana[barra+N1+N2][barra+N1+N2] = somatorio_4;
-
-        /* Preenchimento do vetor solucao */
-        vetor_solucao[barra] = -1* matriz_PQ[barra][2] * somatorio_3; /* = -Pcalc*/
-        vetor_solucao[barra+N1+N2] = matriz_PQ[barra][2] * somatorio_1; /* -Qcalc */
-
-    }
-
-    /* Para barras PV - Preenchimento do quadrante 4 do quadrante 1 da matriz jacobiana */
-    for(barra = 0; barra < N2; barra++) {
-        j = matriz_PV[barra][0]; /* j armazena o numero da barra em questao */
-
-        somatorio_1 = 0;
-        somatorio_2 = 0;
-
-        /* Derivada parcial de fpj em função de Theta k (barras PV) */
-        for(i=0; i < N2; i++) {
-            k = matriz_PV[i][0]; /* k armazena o numero da barra em questao */
-            if(k != j) {
-                matriz_jacobiana[barra+N1][i+N1] = -1 * matriz_PV[barra][2] * matriz_PV[i][2] * (matriz_G[j][k] * cos(vetor_delta[i] - vetor_delta[barra]) + matriz_B[j][k] * sin(vetor_delta[i] - vetor_delta[barra]));
-                somatorio_1 += matriz_PV[i][2] * (matriz_G[j][k] * sin(vetor_delta[i] - vetor_delta[barra]) + matriz_B[j][k] * cos(vetor_delta[i] - vetor_delta[barra]));
-                somatorio_2 += matriz_PV[i][2] * (matriz_G[j][k] * cos(vetor_delta[i] - vetor_delta[barra]) - matriz_B[j][k] * sin(vetor_delta[i] - vetor_delta[barra]));
-            }
-        }
-
-        /* Derivada parcial de fpj em função de Theta j (barras PQ e PV) */
-        matriz_jacobiana[barra+N1][barra+N1] = matriz_PV[barra][2] * somatorio_1;
-
-        /* Preenchimento do vetor solucao */
-        vetor_solucao[barra+N1] = -1 * (matriz_PV[barra][2] * somatorio_2 - matriz_PV[barra][3]); /* -(Pcalc - Pesp) */
-
-    }
-
-    /* Se a barra for Swing, ela não contribui com o sistema linear */
-
-    /* Testes e Debug */
-    /* imprimirMatriz(matriz_nos, numero_barras, 5); */
-
-    imprimirMatriz(matriz_B, numero_barras, numero_barras);
-    printf("\n");
-    trocarLinhasMatriz(matriz_B, 0, 1, numero_barras);
-    imprimirMatriz(matriz_B, numero_barras, numero_barras);
-    /* printf("\n");
-    imprimirMatriz(matriz_G, numero_barras, numero_barras); */
+    int cols = 5;
+    printf("N1 = %d\n", N1);
+    printf("N2 = %d\n", N2);
+    printf("N3 = %d\n", N3);
+    // imprimirMatriz(matriz_PQ, N1, cols);
+    // imprimirMatriz(matriz_PV, N1 + N2, cols);
+    // imprimirMatriz(matriz_swing, N3, cols);
 
 
-    /* Decomposicao LU */
-    /* permutacoes = int(numero_barras/2);
-    vetor_permut = criarVetorDinamico(permutacoes); */
-
-
-
-    /* Desalocacao de memoria */
     // free(vetor_permut);
     destruirMatriz(matriz_B, numero_barras);
     destruirMatriz(matriz_G, numero_barras);
@@ -196,21 +89,21 @@ double* criarVetorDinamico(int N) {
 double** criarMatrizDinamica(int m, int n) {
     double **matriz;
     int i;
-    if(m < 1 || n < 1) { /* verifica parametros recebidos */
+    if (m < 1 || n < 1) { /* verifica parametros recebidos */
         printf ("** Erro: Parametro invalido **\n");
         return (NULL);
     }
 
     /* aloca as linhas da matriz */
     matriz = (double **) calloc (m, sizeof(double *));
-    if(matriz == NULL) {
+    if (matriz == NULL) {
         printf ("** Erro: Memoria Insuficiente **");
         return (NULL);
     }
     /* aloca as colunas da matriz */
-    for( i = 0; i < m; i++ ) {
+    for ( i = 0; i < m; i++ ) {
         matriz[i] = (double*) calloc (n, sizeof(double));
-        if(matriz[i] == NULL) {
+        if (matriz[i] == NULL) {
             printf ("** Erro: Memoria Insuficiente **");
             return (NULL);
         }
@@ -227,7 +120,7 @@ void destruirMatriz(double** Matriz, int linhas) {
 
     int i;
 
-    for(i = 0; i < linhas; i++) {
+    for(i = 0;i < linhas; i++) {
         free(Matriz[i]);
     }
 
