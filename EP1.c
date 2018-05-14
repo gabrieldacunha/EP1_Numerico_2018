@@ -22,8 +22,10 @@ void imprimirMatriz(double** Matriz, int linhas, int colunas);
 void imprimirVetor(double* V, int tamanho);
 void imprimirVetorInt(int* V, int tamanho);
 void destruirMatriz(double** Matriz, int linhas);
-void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N) ;
+void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N);
+void matrizMultiplicandoVetor(double** matriz, double *vetor, double *resultado, int N);
 double** copiarMatriz(double** matriz_origem, int m, int n);
+void criarJacobiana2(double **matriz_jacobiana, double *vetor_x);
 void criarSistemaLinear4(double **matriz_jacobiana, double **matriz_PQ, double **matriz_PV, double **matriz_G, double **matriz_B, double *vetor_x, double *vetor_solucao, int N1, int N2);
 double obterDesvioMaximo(double *vetor_solucao, double *solucao_inicial, int tamanho_sistema);
 void atualizarVetor(double* vetor_x, double* vetor_c, int N);
@@ -98,6 +100,8 @@ int main() {
                 /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k))*/
                 atualizarVetor (vetor_incognitas, vetor_delta, tamanho_sistema);
 
+                /*A matriz jacobiana não é atualizada nesse teste, pois não depende do vetor de incognitas*/
+
                 /*Atualização do vetor de solucoes usando o novo vetor de incognitas*/
                 vetor_solucao[0] = matriz_jacobiana[0][0]*vetor_incognitas[0] + matriz_jacobiana[0][1]*vetor_incognitas[1];
                 vetor_solucao[1] = matriz_jacobiana[1][0]*vetor_incognitas[0] + matriz_jacobiana[1][1]*vetor_incognitas[1];
@@ -107,10 +111,11 @@ int main() {
                 printf("Desvio: %lf\n", desvio_max);
                 if (desvio_max < erro_max){
                     printf("Convergiu! Numero de iteracoes = %d\n", i);
+                    printf("A solucao do sistema é:\n");
                     imprimirVetor(vetor_incognitas, tamanho_sistema);
                     return 0; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_incognitas atual*/
                 } 
-                i++; 
+                i++; /* Aumenta o passo da iteracao*/
             } 
 
             /* Desalocacao de memoria */
@@ -123,7 +128,65 @@ int main() {
             break;
 
         case 2:
+            /* Dimensiona o sistema linear a ser resolvido */
+            tamanho_sistema = 4;
+            matriz_jacobiana = criarMatrizDinamica(tamanho_sistema, tamanho_sistema);
+            vetor_solucao = criarVetorDinamico(tamanho_sistema);
+            solucao_inicial = criarVetorDinamico(tamanho_sistema);
+            vetor_incognitas = criarVetorDinamico(tamanho_sistema);
+            vetor_delta = criarVetorDinamico(tamanho_sistema);
+            vetor_permut = criarVetorDinamicoInt(tamanho_sistema);
+            erro_max = 0.1;
+
+            /*Estimativa de x inicial (1,1,1,1)*/
+            vetor_incognitas[0] = 1;
+            vetor_incognitas[1] = 1;
+            vetor_incognitas[2] = 1;
+            vetor_incognitas[3] = 1;
+
+            /* Monta o sistema linear */
+            criarJacobiana2(matriz_jacobiana, vetor_incognitas); /* matriz jacobiana inicial com x(0) = (1,1,1,1)*/
+            matrizMultiplicandoVetor(matriz_jacobiana, vetor_incognitas, solucao_inicial, tamanho_sistema); 
+
+            i = 1; /* Iteracoes necessarias do metodo de newton */
+            while(1) { /* Executa o metodo de Newton ate atingir a convergencia*/
+
+                /* Decomposicao LU */
+                decomporLU(matriz_jacobiana, tamanho_sistema, vetor_permut);
+                
+                /* Solucao do sistema*/
+                vetor_delta = resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_solucao, vetor_permut);
+    
+                /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k))*/
+                atualizarVetor (vetor_incognitas, vetor_delta, tamanho_sistema);
+
+                /* Atualizacao da matriz jacobiana com o novo vetor de incognitas*/
+                criarJacobiana2(matriz_jacobiana, vetor_incognitas); 
+
+                /*Atualização do vetor de solucoes usando a nova jacobiana e o novo vetor de incognitas*/
+                matrizMultiplicandoVetor(matriz_jacobiana, vetor_incognitas, vetor_solucao, tamanho_sistema);
+                
+                /* Teste de convergencia*/
+                desvio_max = obterDesvioMaximo(vetor_solucao, solucao_inicial, tamanho_sistema);
+                printf("Desvio: %lf\n", desvio_max);
+                if (desvio_max < erro_max){
+                    printf("Convergiu! Numero de iteracoes = %d\n", i);
+                    printf("A solucao do sistema é:\n");
+                    imprimirVetor(vetor_incognitas, tamanho_sistema);
+                    return 0; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_incognitas atual*/
+                } 
+                i++; /* Aumenta o passo da iteracao*/
+            }
+
+            /* Desalocacao de memoria */
+            free(vetor_permut);
+            free(vetor_incognitas);
+            free(vetor_solucao);
+            free(solucao_inicial);
+            free(vetor_delta);
+            destruirMatriz(matriz_jacobiana, tamanho_sistema);
             break;
+
         case 3:
             break;
         case 4:
@@ -331,6 +394,21 @@ double** copiarMatriz(double** matriz_origem, int m, int n){
     return matriz_destino;
 }
 
+void matrizMultiplicandoVetor(double** matriz, double *vetor, double *resultado, int N) {
+    /* Armazena em resultado a multiplicacao da matriz de N colunas pelo vetor de N linhas */
+
+    int i, j;
+    double soma = 0;
+
+    for(i = 0; i < N; i++) {
+        for(j = 0; j < N; j++) {
+            soma += matriz[i][j] * vetor[j];
+        }
+        resultado[i] = soma;
+        soma = 0;
+    }
+}
+
 void atualizarVetor(double* vetor_x, double* vetor_c, int N){
     /* Soma vetor_c(k) em vetor_x(k) para obter vetor_x(k+1) */
     int i;
@@ -483,6 +561,25 @@ void criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matr
     }
 
     fclose(arquivo);
+
+}
+void criarJacobiana2(double **matriz_jacobiana, double *vetor_x) {
+    matriz_jacobiana[0][0]= 4 - vetor_x[3];
+    matriz_jacobiana[0][1]= -1;
+    matriz_jacobiana[0][2]= 1;
+    matriz_jacobiana[0][3]= -1* vetor_x[0];
+    matriz_jacobiana[1][0]= -1;
+    matriz_jacobiana[1][1]= 3 - vetor_x[3];
+    matriz_jacobiana[1][2]= -2;
+    matriz_jacobiana[1][3]= -vetor_x[1];
+    matriz_jacobiana[2][0]= 1;
+    matriz_jacobiana[2][1]= -2;
+    matriz_jacobiana[2][2]= 3 - vetor_x[3];
+    matriz_jacobiana[2][3]= -1* vetor_x[2];
+    matriz_jacobiana[3][0]= 2*vetor_x[0];
+    matriz_jacobiana[3][1]= 2*vetor_x[1];
+    matriz_jacobiana[3][2]= 2*vetor_x[2];
+    matriz_jacobiana[3][3]= 0;
 
 }
 
