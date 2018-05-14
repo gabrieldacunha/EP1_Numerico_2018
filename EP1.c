@@ -10,19 +10,18 @@
 #include <stdint.h>
 #include <math.h>
 
-
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Declaracao de funcoes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 double** criarMatrizDinamica(int m, int n);
 double* criarVetorDinamico(int N);
 int* criarVetorDinamicoInt(int N);
 void obterDadosBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3);
-void criarMatrizesBarras(char *nome_arquivo, double **barras_PQ, double **barras_PV, double **barras_swing, double *solucao_inicial, double *vetor_x, int N1, int N2);
+void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQ, double **matriz_PV, double **matriz_swing, double *solucao_inicial, double *vetor_x, int N1, int N2);
 void criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matriz_B);
-void imprimirMatriz(double** Matriz, int linhas, int colunas);
-void imprimirVetor(double* V, int tamanho);
-void imprimirVetorInt(int* V, int tamanho);
-void destruirMatriz(double** Matriz, int linhas);
-void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N);
+void imprimirMatriz(double** matriz, int m, int n);
+void imprimirVetor(double* vetor, int N);
+void imprimirVetorInt(int* vetor, int N);
+void destruirMatriz(double** matriz, int m);
+void trocarLinhasMatriz(double** matriz, int i1, int i2, int N);
 void matrizMultiplicandoVetor(double** matriz, double *vetor, double *resultado, int N);
 double** copiarMatriz(double** matriz_origem, int m, int n);
 void criarJacobiana2(double **matriz_jacobiana, double *vetor_x);
@@ -31,7 +30,6 @@ double obterDesvioMaximo(double *vetor_solucao, double *solucao_inicial, int tam
 void atualizarVetor(double* vetor_x, double* vetor_c, int N);
 void decomporLU(double **matriz_LU, int N, int *vetor_permut);
 double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int *vetor_permut);
-
 
 /* -------------------------------------------------------------------------------------*/
 
@@ -111,7 +109,7 @@ int main() {
                 printf("Desvio: %lf\n", desvio_max);
                 if (desvio_max < erro_max){
                     printf("Convergiu! Numero de iteracoes = %d\n", i);
-                    printf("A solucao do sistema é:\n");
+                    printf("Solucao do sistema:\n");
                     imprimirVetor(vetor_incognitas, tamanho_sistema);
                     return 0; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_incognitas atual*/
                 } 
@@ -171,7 +169,7 @@ int main() {
                 printf("Desvio: %lf\n", desvio_max);
                 if (desvio_max < erro_max){
                     printf("Convergiu! Numero de iteracoes = %d\n", i);
-                    printf("A solucao do sistema é:\n");
+                    printf("Solucao do sistema:\n");
                     imprimirVetor(vetor_incognitas, tamanho_sistema);
                     return 0; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_incognitas atual*/
                 } 
@@ -276,19 +274,19 @@ int main() {
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Funcoes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 double* criarVetorDinamico(int N) {
-    double *Vetor;
+    double *vetor;
 
-    Vetor = (double*) calloc(N, sizeof(double));
+    vetor = (double*) calloc(N, sizeof(double));
 
-    return Vetor;
+    return vetor;
 }
 
 int* criarVetorDinamicoInt(int N) {
-    int *Vetor;
+    int *vetor;
 
-    Vetor = (int*) calloc(N, sizeof(int));
+    vetor = (int*) calloc(N, sizeof(int));
 
-    return Vetor;
+    return vetor;
 }
 
 double** criarMatrizDinamica(int m, int n) {
@@ -316,7 +314,7 @@ double** criarMatrizDinamica(int m, int n) {
     return matriz;
 }
 
-void destruirMatriz(double** Matriz, int linhas) {
+void destruirMatriz(double** matriz, int m) {
     /* Desaloca espaco na memoria antes de fechar o programa.
     *  Sem isso, a memória RAM alocada no programa fica
     *  ocupada até o reinicio do sistema.
@@ -325,63 +323,67 @@ void destruirMatriz(double** Matriz, int linhas) {
 
     int i;
 
-    for(i = 0; i < linhas; i++) {
-        free(Matriz[i]);
+    for(i = 0; i < m; i++) {
+        free(matriz[i]);
     }
 
-    free(Matriz);
+    free(matriz);
 }
 
-void imprimirMatriz(double** Matriz, int linhas, int colunas) {
+void imprimirMatriz(double** matriz, int m, int n) {
     int i, j;
-    for (i = 0; i < linhas; i++){
+    for (i = 0; i < m; i++){
         printf("| ");
-        for (j = 0; j < colunas; j++) {
-            if(Matriz[i][j] > 0) {
-                printf(" %.7lf ", Matriz[i][j]);
+        for (j = 0; j < n; j++) {
+            if(matriz[i][j] > 0) {
+                printf(" %.7lf ", matriz[i][j]);
             } else {
-                printf("%.7lf ", Matriz[i][j]);
+                printf("%.7lf ", matriz[i][j]);
             }
         }
         printf("|\n");
     }
 }
 
-void imprimirVetor(double* V, int tamanho) {
+void imprimirVetor(double* vetor, int N) {
+    /* Impressao de vetor de doubles */
     int i;
-    for (i = 0; i < tamanho; i++){
-        if(V[i] > 0) {
-            printf("|  %e |\n", V[i]);
+    for (i = 0; i < N; i++){
+        if(vetor[i] > 0) {
+            printf("|  %e |\n", vetor[i]);
         }
         else {
-            printf("| %e |\n", V[i]);
+            printf("| %e |\n", vetor[i]);
         }
     }
 }
 
-void imprimirVetorInt(int* V, int tamanho) {
+void imprimirVetorInt(int* vetor, int N) {
+    /* Impressao de vetor de inteiros */
     int i;
-    for (i = 0; i < tamanho; i++){
-        if(V[i] > 0) {
-            printf("|  %d |\n", V[i]);
+    for (i = 0; i < N; i++){
+        if(vetor[i] > 0) {
+            printf("|  %d |\n", vetor[i]);
         }
         else {
-            printf("| %d |\n", V[i]);
+            printf("| %d |\n", vetor[i]);
         }
     }
 }
 
-void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N) {
+void trocarLinhasMatriz(double** matriz, int i1, int i2, int N) {
+    /* Troca as linhas i1 e i2 de Matriz*/
     double temp;
     int j;
     for (j = 0; j < N; j++){
-        temp = Matriz[i1][j];
-        Matriz[i1][j] = Matriz[i2][j];
-        Matriz[i2][j] = temp;
+        temp = matriz[i1][j];
+        matriz[i1][j] = matriz[i2][j];
+        matriz[i2][j] = temp;
     }
 }
 
 double** copiarMatriz(double** matriz_origem, int m, int n){
+    /* Retorna uma matriz que é cópia da matriz fornecida como parâmetro*/
     double **matriz_destino;
     int i, j;
     matriz_destino = criarMatrizDinamica(m, n);
@@ -395,7 +397,7 @@ double** copiarMatriz(double** matriz_origem, int m, int n){
 }
 
 void matrizMultiplicandoVetor(double** matriz, double *vetor, double *resultado, int N) {
-    /* Armazena em resultado a multiplicacao da matriz de N colunas pelo vetor de N linhas */
+    /* Armazena em um vetor resultado da multiplicacao da matriz de N colunas pelo vetor de N linhas */
 
     int i, j;
     double soma = 0;
@@ -418,6 +420,7 @@ void atualizarVetor(double* vetor_x, double* vetor_c, int N){
 }
 
 void obterDadosBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3) {
+    /*Obtem parametros do arquivo de barras, como o numero total de linhas e a quantidade de cada tipo de barra*/
     char linha[512]; /* Precisa mesmo ser 512? */
     int numero_barras; /* Quantidade total de barras (nos) */
     int id_barra; /* Numero da barra */
@@ -470,7 +473,8 @@ void obterDadosBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3
 
 }
 
-void criarMatrizesBarras(char *nome_arquivo, double **barras_PQ, double **barras_PV, double **barras_swing, double *solucao_inicial, double *vetor_x, int N1, int N2) {
+void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQ, double **matriz_PV, double **matriz_swing, double *solucao_inicial, double *vetor_x, int N1, int N2) {
+    /*Cria matriz_PQ, matriz_PV e matriz_swing de acordo com o arquivo de dados de barras fornecido*/
     char linha[512]; /* Precisa mesmo ser 512? */
     int numero_barras;
     int tamanho_sistema;
@@ -501,33 +505,33 @@ void criarMatrizesBarras(char *nome_arquivo, double **barras_PQ, double **barras
 
         switch(tipo_barra) {
             case 0:
-                barras_PQ[i][0] = id_barra;
-                barras_PQ[i][1] = tipo_barra;
-                barras_PQ[i][2] = tensao_nominal;
-                barras_PQ[i][3] = parametro_1;
-                barras_PQ[i][4] = parametro_2;
+                matriz_PQ[i][0] = id_barra;
+                matriz_PQ[i][1] = tipo_barra;
+                matriz_PQ[i][2] = tensao_nominal;
+                matriz_PQ[i][3] = parametro_1;
+                matriz_PQ[i][4] = parametro_2;
                 solucao_inicial[n] = 0;
                 i++;
                 n++;
                 break;
 
             case 1:
-                barras_PV[j][0] = id_barra;
-                barras_PV[j][1] = tipo_barra;
-                barras_PV[j][2] = tensao_nominal;
-                barras_PV[j][3] = parametro_1;
-                barras_PV[j][4] = parametro_2;
+                matriz_PV[j][0] = id_barra;
+                matriz_PV[j][1] = tipo_barra;
+                matriz_PV[j][2] = tensao_nominal;
+                matriz_PV[j][3] = parametro_1;
+                matriz_PV[j][4] = parametro_2;
                 solucao_inicial[n] = parametro_1;
                 j++;
                 n++;
                 break;
 
             case 2:
-                barras_swing[k][0] = id_barra;
-                barras_swing[k][1] = tipo_barra;
-                barras_swing[k][2] = tensao_nominal;
-                barras_swing[k][3] = parametro_1;
-                barras_swing[k][4] = parametro_2;
+                matriz_swing[k][0] = id_barra;
+                matriz_swing[k][1] = tipo_barra;
+                matriz_swing[k][2] = tensao_nominal;
+                matriz_swing[k][3] = parametro_1;
+                matriz_swing[k][4] = parametro_2;
                 k++;
                 break;
             default:
@@ -539,6 +543,7 @@ void criarMatrizesBarras(char *nome_arquivo, double **barras_PQ, double **barras
 }
 
 void criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matriz_B) {
+    /* Preenche as matrizes G e B de acordo com os valores das condutancias e susceptancias fornecidos pelo arquivo da matriz de admintancias*/
     char linha[512]; /* Precisa mesmo ser 512? */
     int numero_elementos; /* Numero de elementos da matriz de admitancias */
     int j, k; /* linha e coluna de cada elemento */
@@ -563,7 +568,9 @@ void criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matr
     fclose(arquivo);
 
 }
+
 void criarJacobiana2(double **matriz_jacobiana, double *vetor_x) {
+    /* Cria a matriz jacobiana para o Teste 2, usando o vetor de incognitas vetor_x*/
     matriz_jacobiana[0][0]= 4 - vetor_x[3];
     matriz_jacobiana[0][1]= -1;
     matriz_jacobiana[0][2]= 1;
@@ -584,7 +591,7 @@ void criarJacobiana2(double **matriz_jacobiana, double *vetor_x) {
 }
 
 void criarSistemaLinear4(double **matriz_jacobiana, double **matriz_PQ, double **matriz_PV, double **matriz_G, double **matriz_B, double *vetor_x, double *vetor_solucao, int N1, int N2) {
-    /* Preenche o sistema linear */
+    /* Preenche o sistema linear para o teste 4 */
     int barra, i; /* Variaveis auxiliares dos loops*/
     int j; /* Variavel auxiliar para cada barra */
     int k; /* Variavel auxiliar para a iteracao do somatorio */
@@ -711,6 +718,7 @@ void decomporLU(double **matriz_LU, int N, int *vetor_permut) {
 }
 
 double obterDesvioMaximo(double *vetor_solucao, double *solucao_inicial, int tamanho_sistema) {
+    /* Dados o vetor_solucao e a solucao_inicial do sistema, obtém o maio desvio em módulo entre seus elementos*/
     int i; 
     double desvio, teste;
     desvio = 0;
@@ -727,8 +735,7 @@ double obterDesvioMaximo(double *vetor_solucao, double *solucao_inicial, int tam
 }
 
 double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int *vetor_permut) {
-    /* Dada uma matriz LU enxertada com o vetor solução b, devolve o vetor
-    de correcao c */
+    /* Dada uma matriz LU, enxerta o vetor solução b e resolve o sistema para obter o vetor de correcao de incognitas c (vetor_delta) */
     double *y; /* vetor de incognitas: Ly = b */
     double *x; /* vetor de incognitas Ux = y*/
     double soma, temp; /* variaveis auxiliares*/
@@ -778,5 +785,4 @@ double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int
         x[i] = (matriz_LU[i][n] - soma) / matriz_LU[i][i];
     }
     return x;
-
 }
