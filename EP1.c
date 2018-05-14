@@ -45,11 +45,10 @@ int main() {
     double** matriz_swing; /* Matriz reunindo todas as barras Swing do arquivo de dados de barras */
     int N1, N2, N3; /* Numero de barras PQ, PV e Swing, respectivamente */
     int tamanho_sistema; /* Dimensao do sistema linear de equacoes a ser resolvido */
-    int permutacoes; /* Numero de permutacoes possiveis dado o tamanho de uma matriz quadrada */
-    int i; /* Variaveis auxiliares */
+    int i, j; /* Variaveis auxiliares */
     int* vetor_permut; /* Vetor de permutacoes usado na decomposicao LU */
     double** matriz_jacobiana; /* Matriz jacobiana de derivadas parciais */
-    double* vetor_x; /* Vetor de incognitas do sistema */
+    double* vetor_incognitas; /* Vetor de incognitas do sistema */
     double* vetor_delta; /* Vetor c a ser iterado em cada passo do metodo de Newton*/
     double* vetor_solucao; /* Vetor de desvios calculados (fp e fq) */
     double desvio_max; /* Desvio maximo do vetor de solucoes calculado a cada iteracao */
@@ -66,7 +65,43 @@ int main() {
     switch(tipo_problema){
 
         case 1:
+            /* Dimensiona o sistema linear a ser resolvido */
+            tamanho_sistema = 2;
+            matriz_jacobiana = criarMatrizDinamica(tamanho_sistema, tamanho_sistema);
+            vetor_solucao = criarVetorDinamico(tamanho_sistema);
+            vetor_incognitas = criarVetorDinamico(tamanho_sistema);
+            vetor_delta = criarVetorDinamico(tamanho_sistema);
+            vetor_permut = criarVetorDinamicoInt(tamanho_sistema);
+            erro_max = 0.1;
+
+            /* Monta o sistema linear */
+            matriz_jacobiana[0][0] = 2;
+            matriz_jacobiana[1][1] = 2;
+            vetor_solucao[0] = 4;
+            vetor_solucao[1] = 6;
+
+            // while(1) { /* Executa o metodo de Newton ate atingir a convergencia*/
+
+                /* Decomposicao LU */
+                decomporLU(matriz_jacobiana, tamanho_sistema, vetor_permut);
+                
+                /* Solucao do sistema*/
+                vetor_delta = resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_solucao, vetor_permut);
+                imprimirVetor(vetor_delta, tamanho_sistema);
+                /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k))*/
+                atualizarVetor (vetor_incognitas, vetor_delta, tamanho_sistema);
+
+                /* Teste de convergencia*/
+                desvio_max = obterDesvioMaximo(vetor_delta, tamanho_sistema);
+                printf("Desvio: %lf\n", desvio_max);
+                if (desvio_max < erro_max){
+                    printf("Convergiu!\n");
+                    imprimirVetor(vetor_incognitas, tamanho_sistema);
+                    return 0; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_incognitas atual*/
+                }  
+            // } 
             break;
+
         case 2:
             break;
         case 3:
@@ -102,38 +137,36 @@ int main() {
             /* Dimensiona o sistema linear a ser resolvido */
             tamanho_sistema = 2 * N1 + N2;
             matriz_jacobiana = criarMatrizDinamica(tamanho_sistema, tamanho_sistema);
-            vetor_x = criarVetorDinamico(tamanho_sistema);
+            vetor_incognitas = criarVetorDinamico(tamanho_sistema);
             vetor_solucao = criarVetorDinamico(tamanho_sistema);
+            vetor_permut = criarVetorDinamicoInt(tamanho_sistema);
         
             while(1) { /* Executa o metodo de Newton ate atingir a convergencia*/
                
                 /* Monta o sistema linear */
-                criarSistemaLinear4(matriz_jacobiana, matriz_PQ, matriz_PV, matriz_G, matriz_B, vetor_x, vetor_solucao, N1, N2);
+                criarSistemaLinear4(matriz_jacobiana, matriz_PQ, matriz_PV, matriz_G, matriz_B, vetor_incognitas, vetor_solucao, N1, N2);
                
                 /* Teste de convergencia*/
                 desvio_max = obterDesvioMaximo(vetor_solucao, tamanho_sistema);
                 printf("Desvio: %lf\n", desvio_max);
                 if (desvio_max < erro_max){
                     printf("Convergiu!\n");
-                    return 0; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_x atual*/
+                    return 0; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_incognitas atual*/
                 }
 
                 /* Decomposicao LU */
-               /* permutacoes = tamanho_sistema/2;
-                printf("Permutacoes = %d\n", permutacoes);*/
-                vetor_permut = criarVetorDinamicoInt(tamanho_sistema); 
                 decomporLU(matriz_jacobiana, tamanho_sistema, vetor_permut);
                 
                 /* Solucao do sistema*/
                 vetor_delta = resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_solucao, vetor_permut);
 
                 /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k))*/
-                atualizarVetor (vetor_x, vetor_delta, tamanho_sistema);
+                atualizarVetor (vetor_incognitas, vetor_delta, tamanho_sistema);
             } 
 
             /* Desalocacao de memoria */
             free(vetor_permut);
-            free(vetor_x);
+            free(vetor_incognitas);
             free(vetor_solucao);
             free(vetor_delta);
             destruirMatriz(matriz_PQ, N1);
