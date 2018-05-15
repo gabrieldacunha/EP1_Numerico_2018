@@ -39,13 +39,14 @@ int main() {
     int tamanho_sistema; /* Dimensao do sistema linear de equacoes a ser resolvido */
     int permutacoes; /* Numero de permutacoes possiveis dado o tamanho de uma matriz quadrada */
     int barra, i; /* Variaveis auxiliares */
-    int* vetor_permut; /* Vetor de permutacoes usado na decomposicao LU */
+    double* vetor_permut; /* Vetor de permutacoes usado na decomposicao LU */
     int j; /* Variavel auxiliar para cada barra */
     int k; /* Variavel auxiliar para a iteracao do somatorio */
     double** matriz_jacobiana; /* Matriz jacobiana de derivadas parciais */
     double* vetor_delta; /* Vetor de incognitas do sistema */
     double* vetor_solucao; /* Vetor de desvios calculados (fp e fq) */
     double somatorio_1, somatorio_2, somatorio_3, somatorio_4; /* Variavel auxiliar para os somatorios da matriz jacobiana */
+    double* matriz_A; /*Matriz que sera a matriz jacobiana decomposta em LU */
     double erro_max; /* Estabelece a tolerancia maxima dos desvios calculados */
 
     /* Execucao do codigo */
@@ -154,30 +155,23 @@ int main() {
 
     /* Se a barra for Swing, ela não contribui com o sistema linear */
 
-    /* Testes e Debug */
-    /* imprimirMatriz(matriz_nos, numero_barras, 5); */
-
-    imprimirMatriz(matriz_B, numero_barras, numero_barras);
-    printf("\n");
-    trocarLinhasMatriz(matriz_B, 0, 1, numero_barras);
-    imprimirMatriz(matriz_B, numero_barras, numero_barras);
-    /* printf("\n");
-    imprimirMatriz(matriz_G, numero_barras, numero_barras); */
-
 
     /* Decomposicao LU */
-    /* permutacoes = int(numero_barras/2);
-    vetor_permut = criarVetorDinamico(permutacoes); */
+    permutacoes = numero_barras/2;
+    vetor_permut = criarVetorDinamico(permutacoes); 
+
 
 
 
     /* Desalocacao de memoria */
-    // free(vetor_permut);
+    free(vetor_permut);
     destruirMatriz(matriz_B, numero_barras);
     destruirMatriz(matriz_G, numero_barras);
     destruirMatriz(matriz_PQ, N1);
     destruirMatriz(matriz_PV, N2);
     destruirMatriz(matriz_swing, N3);
+    free(vetor_delta);
+    free(vetor_solucao);
 
     return 0;
 }
@@ -284,6 +278,7 @@ void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int 
     i = 0;
     j = 0;
     k = 0;
+
     while(fgets(linha, sizeof(linha), arquivo) != NULL) { /* pega uma linha de até 512 caracteres. Null quando acabar as linhas */
         sscanf(linha, "%d %d %le %le %le", &id_barra, &tipo_barra, &tensao_nominal, &parametro_1, &parametro_2);
 
@@ -301,6 +296,7 @@ void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int 
                 printf("Tipo de barra nao definido\n");
         }
     }
+
     fclose(arquivo);
 
     /* Cria as matrizes de cada barra de acordo com o tamanho verificado */
@@ -315,18 +311,18 @@ void criarMatrizesBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int 
 
     FILE *arquivo2 = fopen(nome_arquivo, "r");
 
-    if(arquivo == NULL) {
+    if(arquivo2 == NULL) {
         printf("\nArquivo nao encontrado\n");
         exit(EXIT_FAILURE);
     }
 
-    *linhas = fscanf(arquivo, "%d\n", &numero_barras);
+    *linhas = fscanf(arquivo2, "%d\n", &numero_barras);
     i = 0;
     j = 0;
     k = 0;
 
     /* Preenchimento das matrizes com os dados do arquivo */
-    while(fgets(linha, sizeof(linha), arquivo) != NULL) { /* pega uma linha de até 512 caracteres. Null quando acabar as linhas */
+    while(fgets(linha, sizeof(linha), arquivo2) != NULL) { /* pega uma linha de até 512 caracteres. Null quando acabar as linhas */
         sscanf(linha, "%d %d %le %le %le", &id_barra, &tipo_barra, &tensao_nominal, &parametro_1, &parametro_2);
 
         switch(tipo_barra) {
