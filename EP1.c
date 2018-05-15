@@ -226,15 +226,7 @@ int main() {
                
                 /* Monta o sistema linear */
                 criarSistemaLinear4(matriz_jacobiana, matriz_PQ, matriz_PV, matriz_G, matriz_B, vetor_incognitas, vetor_desvios, N1, N2);
-               
-                /* Teste de convergencia*/
-                desvio_max = obterDesvioMaximo(vetor_desvios, tamanho_sistema);
-                printf("Desvio: %lf\n", desvio_max);
-                if (desvio_max < erro_max){
-                    printf("Convergiu!\n");
-                    return 0; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_incognitas atual*/
-                }
-
+                
                 /* Decomposicao LU */
                 decomporLU(matriz_jacobiana, tamanho_sistema, vetor_permut);
                 
@@ -243,6 +235,15 @@ int main() {
 
                 /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k))*/
                 atualizarVetor (vetor_incognitas, vetor_correcao, tamanho_sistema);
+                
+                /* Teste de convergencia*/
+                desvio_max = obterDesvioMaximo(vetor_desvios, tamanho_sistema);
+                printf("Desvio: %lf\n", desvio_max);
+                if (desvio_max < erro_max){
+                    printf("Convergiu!\n");
+                    return 0; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_incognitas atual*/
+                }
+
             k++;
             } 
 
@@ -479,7 +480,6 @@ void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQ, double **matriz
     i = 0;
     j = 0;
     k = 0;
-    n = 0;
 
     /* Preenchimento das matrizes com os dados do arquivo */
     while(fgets(linha, sizeof(linha), arquivo) != NULL) { /* pega uma linha de até 512 caracteres. Null quando acabar as linhas */
@@ -492,9 +492,8 @@ void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQ, double **matriz
                 matriz_PQ[i][2] = tensao_nominal;
                 matriz_PQ[i][3] = parametro_1;
                 matriz_PQ[i][4] = parametro_2;
-                
+                vetor_x[i+N1+N2] = tensao_nominal; /*Armazena a tensao nominal no vetor de incognitas*/
                 i++;
-                n++;
                 break;
 
             case 1:
@@ -503,9 +502,7 @@ void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQ, double **matriz
                 matriz_PV[j][2] = tensao_nominal;
                 matriz_PV[j][3] = parametro_1;
                 matriz_PV[j][4] = parametro_2;
-                
                 j++;
-                n++;
                 break;
 
             case 2:
