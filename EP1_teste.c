@@ -110,6 +110,7 @@ double obterDesvioMaximo(double *vetor_F_negativo, int N);
 int main() {
     int* vetor_permutacoes; /* Vetor de permutacoes usado na decomposicao LU */
     double** matriz_jacobiana; /* Matriz jacobiana de derivadas parciais */
+    double** matriz_LU_jacobiana;
     double* vetor_x; /* Vetor de incognitas do sistema */
     double* vetor_c; /* Vetor c a ser iterado em cada passo do metodo de Newton*/
     double* vetor_F_negativo; /* Vetor desvio de solucao calculada (fp = Pcalc - Pesp e fq = Qcalc - Qesp) */
@@ -141,18 +142,21 @@ int main() {
     int k = 0;
     int convergiu = 0;
     while(convergiu == 0) {
+        printf("\nMatriz jacobiana (k = %d):\n", k);
+        imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
+
         /* Decomposicao LU */
-        decomporLU(matriz_jacobiana, tamanho_sistema, vetor_permutacoes);
+        matriz_LU_jacobiana = decomporLU(matriz_jacobiana, tamanho_sistema, vetor_permutacoes);
 
         printf("\nMatriz jacobiana LU (k = %d):\n", k);
-        imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
+        imprimirMatriz(matriz_LU_jacobiana, tamanho_sistema, tamanho_sistema);
 
         printf("\nVetor permutacoes LU (k = %d):\n", k);
         imprimirVetorInt(vetor_permutacoes, tamanho_sistema);
 
 
         /* Solucao do sistema */
-        vetor_c = resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_F_negativo, vetor_permutacoes);
+        vetor_c = resolverSistemaLU(matriz_LU_jacobiana, tamanho_sistema, tamanho_sistema, vetor_F_negativo, vetor_permutacoes);
         printf("Cheguei aqui!\n");
 
         printf("\nVetor c (k = %d):\n", k);
@@ -469,6 +473,8 @@ double** decomporLU(double **matriz_A, int N, int *vetor_permut) {
             matriz_LU[i][j] = matriz_A[i][j];
         }
     }
+    printf("\nMatriz LU (antes das iteracoes):\n");
+    imprimirMatriz(matriz_LU, N, N);
 
     for(k = 0; k < N; k++) {
         for(i = k; i < N; i++) {
@@ -500,6 +506,9 @@ double** decomporLU(double **matriz_A, int N, int *vetor_permut) {
             matriz_LU[j][k] =  matriz_LU[j][k] / matriz_LU[k][k];
             somatorio = 0;
         }
+        printf("\nMatriz LU (iteracao %d):\n", k);
+        imprimirMatriz(matriz_LU, N, N);
+
     }
 
     return matriz_LU;
