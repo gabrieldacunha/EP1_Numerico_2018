@@ -132,7 +132,7 @@ int main() {
             vetor_incognitas = criarVetorDinamico(tamanho_sistema);
             vetor_correcao = criarVetorDinamico(tamanho_sistema);
             vetor_permut = criarVetorDinamicoInt(tamanho_sistema);
-            erro_max = 0.1;
+            erro_max = 0.000000001;
 
             /*Estimativa de x inicial (1,1,1,1)*/
             vetor_incognitas[0] = 1;
@@ -173,9 +173,9 @@ int main() {
                     return 0; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_incognitas atual*/
                 }
                 k++; /* Aumenta o passo da iteracao*/
-                if(k > 10) {
+                /*if(k > 10) {
                     break;
-                }
+                }*/
             }
 
             /* Desalocacao de memoria */
@@ -668,34 +668,53 @@ void decomporLU(double **matriz_LU, int N, int *vetor_permut) {
     int k, i, j;
     double somatorio = 0;
     double maior; /* maior elemento da coluna em questao */
+    double teste; /* variavel de teste para o maior módulo */
     int l; /* Indice correspondente à linha de maior elemento da coluna*/
     for(k = 0; k < N; k++) {
         for(i = k; i < N; i++) {
-            for(j = 0; j < (k-1); j++) {
+            j = 0;
+            while (j<(k-1)) {
                 somatorio += matriz_LU[i][j] * matriz_LU[j][k];
+                j++;
             }
             matriz_LU[i][k] = matriz_LU[i][k] - somatorio;
             somatorio = 0;
         }
 
-        l = k;
-        maior = matriz_LU[k][k];
+        l = k; /* Supõe l = k*/
+        /* Armazena o módulo do elemento como o maior até o momento*/
+        if (matriz_LU[k][k] > 0){ 
+            maior = matriz_LU[k][k];
+        } else {
+            maior = -1* matriz_LU[k][k];
+        }
+
+        /*Testa se o modulo dos elementos das outras linhas da mesma coluna é maior*/
         for(i = k+1; i < N; i++) {
-            if(matriz_LU[i][k] > maior) {
-                l = i;
-                maior = matriz_LU[i][k];
+            if (matriz_LU[i][k] > 0){
+                teste = matriz_LU[i][k];
+            } else {
+                teste = -1* matriz_LU[i][k];
+            }
+            if(teste > maior) {
+                l = i; /* Armazena em l a nova linha que tem o maior elemento*/
+                maior = matriz_LU[i][k]; 
             }
         }
 
-        vetor_permut[k] = l;
+        vetor_permut[k] = l; /* Armazena a linha no vetor de permutacoes*/
 
+        /*Permuta a as linhas, deixando o maior elemento no topo da iteracao*/
         if(l != k) {
             trocarLinhasMatriz(matriz_LU, l, k, N);
         }
-        for(j = (k+1); j < N; j++) {
 
-            for(i = 0; i < (k-1); i++) {
+        for(j = (k+1); j < N; j++) {
+            i = 0;
+            while (i < (k-1)){
+
                 somatorio += matriz_LU[k][i] * matriz_LU[i][j];
+                i++;
             }
 
             matriz_LU[k][j] =  matriz_LU[k][j] - somatorio;
