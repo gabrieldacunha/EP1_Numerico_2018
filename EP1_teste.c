@@ -8,97 +8,194 @@
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Declaracao de funcoes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 double** criarMatrizDinamica(int m, int n);
 double* criarVetorDinamico(int N);
+int* criarVetorDinamicoInt(int N);
 void obterDadosBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3);
 void criarMatrizesBarras(char *nome_arquivo, double **barras_PQ, double **barras_PV, double **barras_swing );
 void criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matriz_B);
 void imprimirMatriz(double** Matriz, int linhas, int colunas);
+void imprimirVetor(double* vetor, int N);
+void imprimirVetorInt(int* vetor, int N);
+void somaVetores(double* vetor_x, double* vetor_c, int N);
 void destruirMatriz(double** Matriz, int linhas);
-void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N) ;
+void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N);
+void sistemaLinear2(double **matriz_jacobiana, double *vetor_x, double *vetor_F_negativo);
 double** decomporLU(double **matriz_A, int N, int *vetor_permut);
 double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int *vetor_permut);
+double obterDesvioMaximo(double *vetor_F_negativo, int N);
 
 
 /* -------------------------------------------------------------------------------------*/
 
+// int main() {
+//     /* Declaracao de variaveis */
+//     char nome_arquivo[128]; /* Nome do arquivo a ser fornecido pelo usuario */
+//     int numero_barras; /* Quantidade de barras = quantidade de linhas e colunas da matriz de admitâncias */
+//     int tipo_barra; /* 0 => PQ; 1 => PV; 3 => Swing */
+//     // double** matriz_G; /* Matriz de Condutancias */
+//     // double** matriz_B; /* Matriz de Susceptancias */
+//     double** matriz_PQ; /* Matriz reunindo todas as barras PQ do arquivo de dados de barras */
+//     double** matriz_PV; /* Matriz reunindo todas as barras PV do arquivo de dados de barras */
+//     double** matriz_swing; /* Matriz reunindo todas as barras Swing do arquivo de dados de barras */
+//     int N1, N2, N3; /* Numero de barras PQ, PV e Swing, respectivamente */
+//     int tamanho_sistema; /* Dimensao do sistema linear de equacoes a ser resolvido */
+//     int permutacoes; /* Numero de permutacoes possiveis dado o tamanho de uma matriz quadrada */
+//     int barra, i; /* Variaveis auxiliares */
+//     int* vetor_permut; /* Vetor de permutacoes usado na decomposicao LU */
+//     int j; /* Variavel auxiliar para cada barra */
+//     int k; /* Variavel auxiliar para a iteracao do somatorio */
+//     double** matriz_jacobiana; /* Matriz jacobiana de derivadas parciais */
+//     double* vetor_delta; /* Vetor de incognitas do sistema */
+//     double* vetor_solucao; /* Vetor de desvios calculados (fp e fq) */
+//     double somatorio_1, somatorio_2, somatorio_3, somatorio_4; /* Variavel auxiliar para os somatorios da matriz jacobiana */
+//     double erro_max; /* Estabelece a tolerancia maxima dos desvios calculados */
+
+//     /* Execucao do codigo */
+
+//     /* Inicializando a quantidade de cada barra */
+
+//     N1 = 0;
+//     N2 = 0;
+//     N3 = 0;
+
+//     /* Leitura do arquivo de barras e criacao da matriz de barras */
+//     printf("Digite o nome do arquivo de barras (com a terminacao .txt): ");
+//     //scanf("%s", nome_arquivo);
+//     strcpy(nome_arquivo, "Redes_fornecidas/1_Stevenson/1_Stevenson_DadosBarras.txt"); /* https://stackoverflow.com/questions/32313150/array-type-char-is-not-assignable */
+
+//     obterDadosBarras(nome_arquivo, &numero_barras, &N1, &N2, &N3);
+//     matriz_PQ = criarMatrizDinamica(N1, 5);
+//     matriz_PV = criarMatrizDinamica(N2, 5);
+//     matriz_swing = criarMatrizDinamica(N3, 5);
+//     criarMatrizesBarras(nome_arquivo, matriz_PQ, matriz_PV, matriz_swing);
+//     printf("Teste\n");
+
+//     int lin = 5;
+//     int cols = 5;
+//     printf("N1 = %d\n", N1);
+//     printf("N2 = %d\n", N2);
+//     printf("N3 = %d\n", N3);
+
+//     printf("\nMatriz_PQ:\n");
+//     imprimirMatriz(matriz_PQ, N1, cols);
+//     printf("\nMatriz_PV:\n");
+//     imprimirMatriz(matriz_PV, N1 + N2, cols);
+//     printf("\nMatriz_swing:\n");
+//     imprimirMatriz(matriz_swing, N3, cols);
+
+//     // strcpy(nome_arquivo, "Redes_fornecidas/1_Stevenson/1_Stevenson_Ynodal.txt");
+//     // criarMatrizAdmitancias(nome_arquivo, matriz_G, matriz_B);
+
+//     // printf("\nMatriz_G:\n");
+//     // imprimirMatriz(matriz_G, lin, cols);
+//     // printf("\nMatriz_B:\n");
+//     // imprimirMatriz(matriz_B, lin, cols);
+
+
+//     // free(vetor_permut);
+//     // destruirMatriz(matriz_B, numero_barras);
+//     // printf("Matriz_B: check\n");
+//     // destruirMatriz(matriz_G, numero_barras);
+//     // printf("Matriz_G: check\n");
+//     destruirMatriz(matriz_PQ, N1);
+//     printf("Matriz_PQ: check\n");
+//     destruirMatriz(matriz_PV, N2);
+//     printf("Matriz_PV: check\n");
+//     destruirMatriz(matriz_swing, N3);
+//     printf("Matriz_swing: check\n");
+
+//     return 0;
+// }
+
+
 int main() {
-    /* Declaracao de variaveis */
-    char nome_arquivo[128]; /* Nome do arquivo a ser fornecido pelo usuario */
-    int numero_barras; /* Quantidade de barras = quantidade de linhas e colunas da matriz de admitâncias */
-    int tipo_barra; /* 0 => PQ; 1 => PV; 3 => Swing */
-    // double** matriz_G; /* Matriz de Condutancias */
-    // double** matriz_B; /* Matriz de Susceptancias */
-    double** matriz_PQ; /* Matriz reunindo todas as barras PQ do arquivo de dados de barras */
-    double** matriz_PV; /* Matriz reunindo todas as barras PV do arquivo de dados de barras */
-    double** matriz_swing; /* Matriz reunindo todas as barras Swing do arquivo de dados de barras */
-    int N1, N2, N3; /* Numero de barras PQ, PV e Swing, respectivamente */
-    int tamanho_sistema; /* Dimensao do sistema linear de equacoes a ser resolvido */
-    int permutacoes; /* Numero de permutacoes possiveis dado o tamanho de uma matriz quadrada */
-    int barra, i; /* Variaveis auxiliares */
-    int* vetor_permut; /* Vetor de permutacoes usado na decomposicao LU */
-    int j; /* Variavel auxiliar para cada barra */
-    int k; /* Variavel auxiliar para a iteracao do somatorio */
+    int* vetor_permutacoes; /* Vetor de permutacoes usado na decomposicao LU */
     double** matriz_jacobiana; /* Matriz jacobiana de derivadas parciais */
-    double* vetor_delta; /* Vetor de incognitas do sistema */
-    double* vetor_solucao; /* Vetor de desvios calculados (fp e fq) */
-    double somatorio_1, somatorio_2, somatorio_3, somatorio_4; /* Variavel auxiliar para os somatorios da matriz jacobiana */
-    double erro_max; /* Estabelece a tolerancia maxima dos desvios calculados */
+    double* vetor_x; /* Vetor de incognitas do sistema */
+    double* vetor_c; /* Vetor c a ser iterado em cada passo do metodo de Newton*/
+    double* vetor_F_negativo; /* Vetor desvio de solucao calculada (fp = Pcalc - Pesp e fq = Qcalc - Qesp) */
+    // double* solucao_inicial; /* Solucoes iniciais esperadas (Pesp e Qesp)*/
+    double desvio_max; /* Desvio maximo do vetor de solucoes calculado a cada iteracao */
+    double erro_max; /* Estabelece a tolerancia maxima do desvio maximo calculado */
 
-    /* Execucao do codigo */
+    int tamanho_sistema = 4;
+    matriz_jacobiana = criarMatrizDinamica(tamanho_sistema, tamanho_sistema);
+    vetor_F_negativo = criarVetorDinamico(tamanho_sistema);
+    vetor_x = criarVetorDinamico(tamanho_sistema);
+    vetor_c = criarVetorDinamico(tamanho_sistema);
+    vetor_permutacoes = criarVetorDinamicoInt(tamanho_sistema);
 
-    /* Inicializando a quantidade de cada barra */
+    erro_max = 0.1;
 
-    N1 = 0;
-    N2 = 0;
-    N3 = 0;
+    vetor_x[0] = 1;
+    vetor_x[1] = 1;
+    vetor_x[2] = 1;
+    vetor_x[3] = 1;
 
-    /* Leitura do arquivo de barras e criacao da matriz de barras */
-    printf("Digite o nome do arquivo de barras (com a terminacao .txt): ");
-    //scanf("%s", nome_arquivo);
-    strcpy(nome_arquivo, "Redes_fornecidas/1_Stevenson/1_Stevenson_DadosBarras.txt"); /* https://stackoverflow.com/questions/32313150/array-type-char-is-not-assignable */
+    sistemaLinear2(matriz_jacobiana, vetor_x, vetor_F_negativo);
 
-    obterDadosBarras(nome_arquivo, &numero_barras, &N1, &N2, &N3);
-    matriz_PQ = criarMatrizDinamica(N1, 5);
-    matriz_PV = criarMatrizDinamica(N2, 5);
-    matriz_swing = criarMatrizDinamica(N3, 5);
-    criarMatrizesBarras(nome_arquivo, matriz_PQ, matriz_PV, matriz_swing);
-    printf("Teste\n");
+    printf("Matriz jacobiana (k = 0):\n");
+    imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
+    printf("\nMatriz -F(x) (k = 0):\n");
+    imprimirVetor(vetor_F_negativo, tamanho_sistema);
 
-    int lin = 5;
-    int cols = 5;
-    printf("N1 = %d\n", N1);
-    printf("N2 = %d\n", N2);
-    printf("N3 = %d\n", N3);
+    int k = 0;
+    int convergiu = 0;
+    while(convergiu == 0) {
+        /* Decomposicao LU */
+        decomporLU(matriz_jacobiana, tamanho_sistema, vetor_permutacoes);
 
-    printf("\nMatriz_PQ:\n");
-    imprimirMatriz(matriz_PQ, N1, cols);
-    printf("\nMatriz_PV:\n");
-    imprimirMatriz(matriz_PV, N1 + N2, cols);
-    printf("\nMatriz_swing:\n");
-    imprimirMatriz(matriz_swing, N3, cols);
+        printf("\nMatriz jacobiana LU (k = %d):\n", k);
+        imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
 
-    // strcpy(nome_arquivo, "Redes_fornecidas/1_Stevenson/1_Stevenson_Ynodal.txt");
-    // criarMatrizAdmitancias(nome_arquivo, matriz_G, matriz_B);
-
-    // printf("\nMatriz_G:\n");
-    // imprimirMatriz(matriz_G, lin, cols);
-    // printf("\nMatriz_B:\n");
-    // imprimirMatriz(matriz_B, lin, cols);
+        printf("\nVetor permutacoes LU (k = %d):\n", k);
+        imprimirVetorInt(vetor_permutacoes, tamanho_sistema);
 
 
-    // free(vetor_permut);
-    // destruirMatriz(matriz_B, numero_barras);
-    // printf("Matriz_B: check\n");
-    // destruirMatriz(matriz_G, numero_barras);
-    // printf("Matriz_G: check\n");
-    destruirMatriz(matriz_PQ, N1);
-    printf("Matriz_PQ: check\n");
-    destruirMatriz(matriz_PV, N2);
-    printf("Matriz_PV: check\n");
-    destruirMatriz(matriz_swing, N3);
-    printf("Matriz_swing: check\n");
+        /* Solucao do sistema */
+        vetor_c = resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_F_negativo, vetor_permutacoes);
+        printf("Cheguei aqui!\n");
+
+        printf("\nVetor c (k = %d):\n", k);
+        imprimirVetor(vetor_c, tamanho_sistema);
+        /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k)) */
+        somaVetores(vetor_x, vetor_c, tamanho_sistema);
+
+        printf("\nVetor x(k+1) (k = %d):\n", k);
+        imprimirVetor(vetor_x, tamanho_sistema);
+
+        /* Atualizacao da matriz jacobiana e do vetor de desvios com o novo vetor de incognitas */
+        sistemaLinear2(matriz_jacobiana, vetor_x, vetor_F_negativo);
+
+        printf("\nMatriz jacobiana (k = %d):\n", k);
+        imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
+
+        /* Teste de convergencia */
+        desvio_max = obterDesvioMaximo(vetor_F_negativo, tamanho_sistema);
+        printf("Desvio: %lf\n", desvio_max);
+
+        if(desvio_max < erro_max) {
+            printf("Convergiu! Numero de iteracoes = %d\n", k);
+            printf("Solucao do sistema:\n");
+            imprimirVetor(vetor_x, tamanho_sistema);
+            convergiu = 1;
+        }
+
+        k++; /* Aumenta o passo da iteracao */
+        if(k > 10) {
+            break;
+        }
+    }
+
+    /* Desalocacao de memoria */
+    free(vetor_permutacoes);
+    free(vetor_x);
+    free(vetor_F_negativo);
+    free(vetor_c);
+    destruirMatriz(matriz_jacobiana, tamanho_sistema);
 
     return 0;
 }
+
 
 
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Funcoes >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
@@ -109,6 +206,14 @@ double* criarVetorDinamico(int N) {
     Vetor = (double*) calloc(N, sizeof(double));
 
     return Vetor;
+}
+
+int* criarVetorDinamicoInt(int N) {
+    int *vetor;
+
+    vetor = (int*) calloc(N, sizeof(int));
+
+    return vetor;
 }
 
 double** criarMatrizDinamica(int m, int n) {
@@ -157,13 +262,39 @@ void imprimirMatriz(double** Matriz, int linhas, int colunas) {
     for (i = 0; i < linhas; i++){
         printf("| ");
         for (j = 0; j < colunas; j++) {
-            if(Matriz[i][j] > 0) {
+            if(Matriz[i][j] >= 0) {
                 printf(" %.7lf ", Matriz[i][j]);
             } else {
                 printf("%.7lf ", Matriz[i][j]);
             }
         }
         printf("|\n");
+    }
+}
+
+void imprimirVetor(double* vetor, int N) {
+    /* Impressao de vetor de doubles */
+    int i;
+    for (i = 0; i < N; i++){
+        if(vetor[i] >= 0) {
+            printf("|  %e |\n", vetor[i]);
+        }
+        else {
+            printf("| %e |\n", vetor[i]);
+        }
+    }
+}
+
+void imprimirVetorInt(int* vetor, int N) {
+    /* Impressao de vetor de doubles */
+    int i;
+    for (i = 0; i < N; i++){
+        if(vetor[i] >= 0) {
+            printf("|  %d |\n", vetor[i]);
+        }
+        else {
+            printf("| %d |\n", vetor[i]);
+        }
     }
 }
 
@@ -316,6 +447,14 @@ void criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matr
 
 }
 
+void somaVetores(double* vetor_x, double* vetor_c, int N) {
+    /* Soma vetor_c(k) em vetor_x(k) para obter vetor_x(k+1) */
+    int i;
+    for (i = 0; i<N; i++){
+        vetor_x[i] = vetor_x[i] + vetor_c[i];
+    }
+}
+
 double** decomporLU(double **matriz_A, int N, int *vetor_permut) {
     /* Implementacao do algritmo fornecido pelo enunciado */
 
@@ -423,4 +562,51 @@ double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int
     }
     return x;
 
+}
+
+
+void sistemaLinear2(double **matriz_jacobiana, double *vetor_x, double *vetor_F_negativo) {
+    /* Cria a matriz jacobiana para o Teste 2, usando o vetor de incognitas vetor_x*/
+    matriz_jacobiana[0][0]= 4 - vetor_x[3];
+    matriz_jacobiana[0][1]= -1;
+    matriz_jacobiana[0][2]= 1;
+    matriz_jacobiana[0][3]= -1 * vetor_x[0];
+    matriz_jacobiana[1][0]= -1;
+    matriz_jacobiana[1][1]= 3 - vetor_x[3];
+    matriz_jacobiana[1][2]= -2;
+    matriz_jacobiana[1][3]= -1 * vetor_x[1];
+    matriz_jacobiana[2][0]= 1;
+    matriz_jacobiana[2][1]= -2;
+    matriz_jacobiana[2][2]= 3 - vetor_x[3];
+    matriz_jacobiana[2][3]= -1 * vetor_x[2];
+    matriz_jacobiana[3][0]= 2 * vetor_x[0];
+    matriz_jacobiana[3][1]= 2 * vetor_x[1];
+    matriz_jacobiana[3][2]= 2 * vetor_x[2];
+    matriz_jacobiana[3][3]= 0;
+
+    /*Cria o vetor desvios -F[x(k)] usando o vetor_x(k)*/
+    vetor_F_negativo[0] = (-4 * vetor_x[0]) + vetor_x[1] - vetor_x[2] + (vetor_x[0] * vetor_x[3]);
+    vetor_F_negativo[1] = vetor_x[0] - (3 * vetor_x[1]) + (2 * vetor_x[2]) + (vetor_x[1] * vetor_x[3]);
+    vetor_F_negativo[2] = (-1 * vetor_x[0]) + (2 * vetor_x[1]) - (3 * vetor_x[2]) + (vetor_x[2] * vetor_x[3]);
+    vetor_F_negativo[3] = (-1 * vetor_x[0] * vetor_x[0]) - (vetor_x[1] * vetor_x[1]) - (vetor_x[2] * vetor_x[2]) + 1;
+
+}
+
+
+double obterDesvioMaximo(double *vetor_F_negativo, int N) {
+    /* Dado o vetor_desvios do sistema, que é o vetor de desvios em
+    relacao à raiz, obtém o maio desvio em módulo entre seus elementos*/
+    int i;
+    double desvio, teste;
+    desvio = 0;
+    for(i = 0; i< N; i++) {
+        teste = vetor_F_negativo[i];
+        if (teste < 0) { /* Garantia de que o desvio sera o maior em modulo*/
+            teste = -1 * vetor_F_negativo[i];
+        }
+        if (teste > desvio) {
+            desvio = teste;
+        }
+    }
+    return desvio;
 }
