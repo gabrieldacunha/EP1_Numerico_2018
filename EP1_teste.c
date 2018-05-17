@@ -19,8 +19,8 @@ void somaVetores(double* vetor_x, double* vetor_c, int N);
 void destruirMatriz(double** Matriz, int linhas);
 void trocarLinhasMatriz(double** Matriz, int i1, int i2, int N);
 void sistemaLinear2(double **matriz_jacobiana, double *vetor_x, double *vetor_F_negativo);
-double** decomporLU(double **matriz_A, int N, int *vetor_permut);
-double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int *vetor_permut);
+void decomporLU(double **matriz_LU, int N, int *vetor_permut);
+void resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_x, double *vetor_b, int *vetor_p);
 double obterDesvioMaximo(double *vetor_F_negativo, int N);
 
 
@@ -125,7 +125,7 @@ int main() {
     vetor_c = criarVetorDinamico(tamanho_sistema);
     vetor_permutacoes = criarVetorDinamicoInt(tamanho_sistema);
 
-    erro_max = 0.1;
+    erro_max = 0.000000001;
 
     vetor_x[0] = 1;
     vetor_x[1] = 1;
@@ -134,47 +134,45 @@ int main() {
 
     sistemaLinear2(matriz_jacobiana, vetor_x, vetor_F_negativo);
 
-    printf("Matriz jacobiana (k = 0):\n");
-    imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
-    printf("\nMatriz -F(x) (k = 0):\n");
-    imprimirVetor(vetor_F_negativo, tamanho_sistema);
+    // printf("Matriz jacobiana (k = 0):\n");
+    // imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
+    // printf("\nMatriz -F(x) (k = 0):\n");
+    // imprimirVetor(vetor_F_negativo, tamanho_sistema);
 
     int k = 0;
     int convergiu = 0;
     while(convergiu == 0) {
-        printf("\nMatriz jacobiana (k = %d):\n", k);
-        imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
+        // printf("\nMatriz jacobiana (k = %d):\n", k);
+        // imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
 
         /* Decomposicao LU */
-        matriz_LU_jacobiana = decomporLU(matriz_jacobiana, tamanho_sistema, vetor_permutacoes);
+        decomporLU(matriz_jacobiana, tamanho_sistema, vetor_permutacoes);
 
-        printf("\nMatriz jacobiana LU (k = %d):\n", k);
-        imprimirMatriz(matriz_LU_jacobiana, tamanho_sistema, tamanho_sistema);
+        // printf("\nMatriz jacobiana LU (k = %d):\n", k);
+        // imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
 
-        printf("\nVetor permutacoes LU (k = %d):\n", k);
-        imprimirVetorInt(vetor_permutacoes, tamanho_sistema);
-
+        // printf("\nVetor permutacoes LU (k = %d):\n", k);
+        // imprimirVetorInt(vetor_permutacoes, tamanho_sistema);
 
         /* Solucao do sistema */
-        vetor_c = resolverSistemaLU(matriz_LU_jacobiana, tamanho_sistema, tamanho_sistema, vetor_F_negativo, vetor_permutacoes);
-        printf("Cheguei aqui!\n");
+        resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_c, vetor_F_negativo, vetor_permutacoes);
 
-        printf("\nVetor c (k = %d):\n", k);
-        imprimirVetor(vetor_c, tamanho_sistema);
+        // printf("\nVetor c (k = %d):\n", k);
+        // imprimirVetor(vetor_c, tamanho_sistema);
         /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k)) */
         somaVetores(vetor_x, vetor_c, tamanho_sistema);
 
-        printf("\nVetor x(k+1) (k = %d):\n", k);
-        imprimirVetor(vetor_x, tamanho_sistema);
+        // printf("\nVetor x(%d):\n", k + 1);
+        // imprimirVetor(vetor_x, tamanho_sistema);
 
         /* Atualizacao da matriz jacobiana e do vetor de desvios com o novo vetor de incognitas */
         sistemaLinear2(matriz_jacobiana, vetor_x, vetor_F_negativo);
 
-        printf("\nMatriz jacobiana (k = %d):\n", k);
-        imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
+        // printf("\nMatriz jacobiana (k = %d):\n", k);
+        // imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
 
         /* Teste de convergencia */
-        desvio_max = obterDesvioMaximo(vetor_F_negativo, tamanho_sistema);
+        desvio_max = obterDesvioMaximo(vetor_c, tamanho_sistema);
         printf("Desvio: %lf\n", desvio_max);
 
         if(desvio_max < erro_max) {
@@ -454,80 +452,253 @@ void criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matr
 void somaVetores(double* vetor_x, double* vetor_c, int N) {
     /* Soma vetor_c(k) em vetor_x(k) para obter vetor_x(k+1) */
     int i;
-    for (i = 0; i<N; i++){
+    for (i = 0; i < N; i++) {
         vetor_x[i] = vetor_x[i] + vetor_c[i];
     }
 }
 
-double** decomporLU(double **matriz_A, int N, int *vetor_permut) {
-    /* Implementacao do algritmo fornecido pelo enunciado */
 
-    int k, i, j, l, t;
+void decomporLU(double **matriz_LU, int N, int *vetor_p) {
+    /* Implementacao do algoritmo fornecido pelo enunciado */
+
+    int k, i, j;
     double somatorio = 0;
-    double** matriz_LU;
+    double maior_valor; /* maior elemento da coluna em questao */
+    double teste; /* variavel de teste para o maior modulo */
+    int l; /* Indice correspondente a linha de maior elemento da coluna*/
+    double** matriz_temp;
 
-    /* Copia da matriz de entrada para a matriz que sera decomposta */
-    matriz_LU = criarMatrizDinamica(N, N);
-    for(i = 0; i < N; i++) {
-        for(j = 0; j < N; j++) {
-            matriz_LU[i][j] = matriz_A[i][j];
-        }
-    }
-    printf("\nMatriz LU (antes das iteracoes):\n");
-    imprimirMatriz(matriz_LU, N, N);
+    matriz_temp = criarMatrizDinamica(1, N);
+
+    // printf("\nMatriz LU (antes das iteracoes):\n");
+    // imprimirMatriz(matriz_LU, N, N);
 
     for(k = 0; k < N; k++) {
         for(i = k; i < N; i++) {
-            for(j = 0; j < (k-1); j++) {
+            somatorio = 0;
+            for(j = 0; j <= k-1; j++) {
                 somatorio += matriz_LU[i][j] * matriz_LU[j][k];
             }
-            matriz_LU[i][k] = matriz_LU[i][k] - somatorio;
-            somatorio = 0;
+            matriz_LU[i][k] -= somatorio;
         }
 
+        //condensacao pivotal
+        maior_valor = fabs(matriz_LU[k][k]);
         l = k;
-        for(t = l+1; t < N; t++) {
-            if(matriz_LU[t][k] > matriz_LU[l][k]) {
-                l = t;
+        for(i = k; i < N; i++) {
+            if(fabs(matriz_LU[i][k]) > maior_valor) {
+                maior_valor = fabs(matriz_LU[i][k]);
+                l = i;
+            }
+        }
+        vetor_p[k] = l;
+        if(vetor_p[k] != k) {
+            for(j = 0; j < N; j++) {
+                matriz_temp[0][j] = matriz_LU[k][j];
+                matriz_LU[k][j] = matriz_LU[vetor_p[k]][j];
+                matriz_LU[vetor_p[k]][j] = matriz_temp[0][j];
             }
         }
 
-        vetor_permut[k] = l;
-        if(l != k) {
-            trocarLinhasMatriz(matriz_LU, l, k, N);
-        }
-        for(j = k+1; j < N; j++) {
-
-            for(i = 0; i < k-1; i++) {
+        for(j = k + 1; j < N; j++) {
+            somatorio = 0;
+            for(i = 0; i <= k-1; i++) {
                 somatorio += matriz_LU[k][i] * matriz_LU[i][j];
             }
-
-            matriz_LU[k][j] =  matriz_LU[k][j] - somatorio;
-            matriz_LU[j][k] =  matriz_LU[j][k] / matriz_LU[k][k];
-            somatorio = 0;
+            matriz_LU[k][j] -= somatorio;
+            matriz_LU[j][k] = matriz_LU[j][k]/matriz_LU[k][k];
         }
-        printf("\nMatriz LU (iteracao %d):\n", k);
-        imprimirMatriz(matriz_LU, N, N);
 
+        // printf("\nMatriz LU (iteracao %d):\n", k);
+        // imprimirMatriz(matriz_LU, N, N);
+        // printf("\nVetor p (iteracao %d):\n", k);
+        // imprimirVetorInt(vetor_p, N);
     }
-
-    return matriz_LU;
+    destruirMatriz(matriz_temp, 1);
 }
 
-double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int *vetor_permut) {
-    /* Dada uma matriz LU enxertada com o vetor solução b, devolve o vetor
-    de soluções x */
+// struct Matrix linsyscalc(struct Matrix A, struct Matrix b){
+//     int k, i, j, l;
+//     double sum1, sum2, sum3, max, temp2;
+
+//     int n = A.m;
+
+// //creating variable sized arrays
+//     struct Matrix x = matrix(n, 1);
+
+//     struct Matrix temp = matrix(1, n);
+
+//     int *p;
+//     p = (int *)malloc(n * sizeof(int));
+// //-----------------------------
+
+// //LU algorithm
+//     for(k = 0; k < n; k++){
+//         for(i = k; i < n; i++){
+//             sum1 = 0;
+//             for(j = 0; j <= k-1; j++){
+//                 sum1 += A.data[i][j] * A.data[j][k];
+//             }
+//             A.data[i][k] -= sum1;
+//         }
+
+//         //condensacao pivotal
+//         max = fabs(A.data[k][k]);
+//         l = k;
+//         for(i = k; i < n; i++){
+//             if(fabs(A.data[i][k]) > max){
+//                 max = fabs(A.data[i][k]);
+//                 l = i;
+//             }
+//         }
+//         p[k] = l;
+//         if(p[k] != k){
+//             for(j = 0; j < n; j++){
+//                 temp.data[0][j] = A.data[k][j];
+//                 A.data[k][j] = A.data[p[k]][j];
+//                 A.data[p[k]][j] = temp.data[0][j];
+//             }
+//         }
+//         //-------------------
+
+//         for(j = k+1; j < n; j++){
+//             sum2 = 0;
+//             for(i = 0; i <= k-1; i++){
+//                 sum2 += A.data[k][i] * A.data[i][j];
+//             }
+//             A.data[k][j] -= sum2;
+//             A.data[j][k] = A.data[j][k]/A.data[k][k];
+//         }
+//     }
+// //------------
+
+// //swapping lines in b vector
+//     for(i = 0; i < n; i++){
+//         if(p[i] != i){
+//             temp2 = b.data[i][0];
+//             b.data[i][0] = b.data[p[i]][0];
+//             b.data[p[i]][0] = temp2;
+//         }
+//     }
+// //--------------------------
+
+// //calculating b vector with Gauss leimination
+//     for(k = 0; k < n; k++){
+//         for(j = k+1; j < n; j++){
+//             b.data[j][0] -= b.data[k][0]*A.data[j][k];
+//         }
+//     }
+
+// //-------------------------------------------
+
+// //getting the system solution
+//     x.data[n-1][0] = b.data[n-1][0]/A.data[n-1][n-1];
+//     for(i = n-2; i >= 0; i--){
+//         sum3 = 0;
+//         for(j = i+1; j < n; j++){
+//             sum3 += A.data[i][j]*x.data[j][0];
+//         }
+//         x.data[i][0] = (b.data[i][0] - sum3)/A.data[i][i];
+//     }
+
+// //---------------------------
+
+
+// //freeing memory
+//     free(p);
+//     clearMatrix(temp);
+// //--------------
+//     return x;
+// }
+
+
+// void resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_x, double *vetor_b, int *vetor_p) {
+//     /* Dada uma matriz LU enxertada com o vetor solução b, devolve o vetor
+//     de soluções x */
+//     // double *y; /* vetor de incognitas: Ly = b */
+//     // double *x; /* vetor de incognitas Ux = y*/
+//     double soma, temp; /* variaveis auxiliares*/
+//     int i, j; /* variaveis auxiliares*/
+//     int k; /* variavel auxiliar do vetor_permut*/
+
+//     /* Permuta o vetor de solucoes com as permutacoes definidas pelo vetor_permut */
+//     for(i = 0; i < m; i++) {
+//         if(vetor_p[i] != i) {
+//             temp = vetor_b[i];
+//             vetor_b[i] = vetor_b[vetor_p[i]];
+//             vetor_b[vetor_p[i]] = temp;
+//         }
+//     }
+
+//     //calculating b vector with Gauss elimination
+//     for(k = 0; k < m; k++) {
+//         for(j = k + 1; j < n; j++){
+//             vetor_b[j] -= vetor_b[k] * matriz_LU[j][k];
+//         }
+//     }
+
+//     //-------------------------------------------
+
+//     //getting the system solution
+//     vetor_x[m-1] = vetor_b[m-1]/matriz_LU[m-1][n-1];
+//     for(i = n-2; i >= 0; i--){
+//         soma = 0;
+//         for(j = i + 1; j < n; j++){
+//             soma += matriz_LU[i][j] * vetor_x[j];
+//         }
+//         vetor_x[i] = (vetor_b[i] - soma) / matriz_LU[i][i];
+//     }
+
+
+//     // /* Enxerta o vetor de solucoes na matriz_LU */
+//     // for(i = 0; i < m; i++) {
+//     //     matriz_LU[i] = realloc(matriz_LU[i], (n+1) * sizeof (double));
+//     //     matriz_LU[i][n] = vetor_b[i];
+//     // }
+
+//     // /* Resolve a parte L, achando o vetor de incognitas y */
+//     // y = criarVetorDinamico(m);
+
+//     // y[0] = matriz_LU[0][n-1];
+//     // for(i = 1; i < m; i++) {
+//     //     soma = 0;
+//     //     for(j=i-1; j>=0; j--) {
+//     //         soma += matriz_LU[i][j] * y[j];
+//     //     }
+//     //     y[i] = (matriz_LU[i][n-1] - soma);
+//     // }
+
+//     //  Substitui o vetor de solucoes b por y
+//     // for(i = 0; i < m; i++) {
+//     //     matriz_LU[i][n-1] = y[i];
+//     // }
+//     // free(y); /* Desaloca a memoria de y, que ja foi usado */
+
+//     // /* Resolve a parte U */
+//     // x = criarVetorDinamico(m);
+//     // x[m-1] = matriz_LU[m-1][n-1] / matriz_LU[m-1][n-2];
+
+//     // for(i = m-2; i>=0; i--) {
+//     //     soma = 0;
+//     //     for(j = i+1; j<(n-1); j++) {
+//     //         soma += matriz_LU[i][j] * x[j];
+//     //     }
+//     //     x[i] = (matriz_LU[i][n-1] - soma) / matriz_LU[i][i];
+//     // }
+//     // return x;
+
+// }
+
+
+void resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_x, double *vetor_b, int *vetor_permut) {
+    /* Dada uma matriz LU, enxerta o vetor solução b e resolve o sistema para obter o vetor de correcao de incognitas c (vetor_correcao) */
     double *y; /* vetor de incognitas: Ly = b */
-    double *x; /* vetor de incognitas Ux = y*/
+    // double *x; /* vetor de incognitas Ux = y*/
     double soma, temp; /* variaveis auxiliares*/
     int i, j; /* variaveis auxiliares*/
-    int k; /* variavel auxiliar do vetor_permut*/
-
-    /* Armazena em k o tamanho do vetor_permut*/
-    k = sizeof(vetor_permut);
 
     /* Permuta o vetor de solucoes com as permutacoes definidas pelo vetor_permut */
-    for(i = 0; i < k; i++) {
+    for(i = 0; i < m; i++) {
         temp = vetor_b[i];
         j = vetor_permut[i];
         vetor_b[i] = vetor_b[j];
@@ -542,35 +713,32 @@ double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int
 
     /* Resolve a parte L, achando o vetor de incognitas y */
     y = criarVetorDinamico(m);
+    y[0] = matriz_LU[0][n];
 
-    y[0] = matriz_LU[0][n-1];
     for(i = 1; i < m; i++) {
         soma = 0;
         for(j=i-1; j>=0; j--) {
             soma += matriz_LU[i][j] * y[j];
         }
-        y[i] = (matriz_LU[i][n-1] - soma);
+        y[i] = (matriz_LU[i][n] - soma);
     }
 
     /* Substitui o vetor de solucoes b por y */
     for(i = 0; i < m; i++) {
-        matriz_LU[i][n-1] = y[i];
+        matriz_LU[i][n] = y[i];
     }
     free(y); /* Desaloca a memoria de y, que ja foi usado */
 
     /* Resolve a parte U */
-    x = criarVetorDinamico(m);
-    x[m-1] = matriz_LU[m-1][n-1] / matriz_LU[m-1][n-2];
+    vetor_x[m-1] = matriz_LU[m-1][n] / matriz_LU[m-1][n-1];
 
     for(i = m-2; i>=0; i--) {
         soma = 0;
-        for(j = i+1; j<(n-1); j++) {
-            soma += matriz_LU[i][j] * x[j];
+        for(j = i+1; j < n; j++) {
+            soma += matriz_LU[i][j] * vetor_x[j];
         }
-        x[i] = (matriz_LU[i][n-1] - soma) / matriz_LU[i][i];
+        vetor_x[i] = (matriz_LU[i][n] - soma) / matriz_LU[i][i];
     }
-    return x;
-
 }
 
 
@@ -607,13 +775,11 @@ double obterDesvioMaximo(double *vetor_F_negativo, int N) {
     relacao à raiz, obtém o maio desvio em módulo entre seus elementos*/
     int i;
     double desvio, teste;
+
     desvio = 0;
     for(i = 0; i< N; i++) {
-        teste = vetor_F_negativo[i];
-        if (teste < 0) { /* Garantia de que o desvio sera o maior em modulo*/
-            teste = -1 * vetor_F_negativo[i];
-        }
-        if (teste > desvio) {
+        teste = fabs(vetor_F_negativo[i]);
+        if(teste > desvio) {
             desvio = teste;
         }
     }
