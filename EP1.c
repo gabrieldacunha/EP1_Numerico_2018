@@ -185,9 +185,9 @@ int main() {
                 printf("Desvio: %lf\n", desvio_max);
                 if(desvio_max < erro_max) {
                     printf("\nConvergiu! Numero de iteracoes = %d\n", k);
-                    printf("Solucao do sistema:\n");
+                    printf("Solucao do sistema com erro maximo de %le:\n", erro_max);
                     imprimirVetor(vetor_x, tamanho_sistema);
-                    convergiu = 1; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_incognitas atual*/
+                    convergiu = 1; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_x atual*/
                 }
             }
 
@@ -200,8 +200,9 @@ int main() {
             break;
 
         case 3:
-            printf("Digite o tamanho n do sistema a ser resolvido: ");
+            printf("Digite o n desejado (sistema n-1 x n-1): ");
             scanf("%d", &tamanho_sistema);
+            tamanho_sistema -=1;
 
             /* Dimensiona o sistema linear a ser resolvido */
             matriz_jacobiana = criarMatrizDinamica(tamanho_sistema, tamanho_sistema);
@@ -209,20 +210,15 @@ int main() {
             vetor_x = criarVetorDinamico(tamanho_sistema);
             vetor_c = criarVetorDinamico(tamanho_sistema);
             vetor_p = criarVetorDinamicoInt(tamanho_sistema);
-            erro_max = 0.000000001;
+            erro_max = 0.000001; /* 10^-6 */
 
             /* Estimativa de x inicial nulo */
             for(k = 0; k < tamanho_sistema; k++) {
                 vetor_x[k] = 0;
             }
 
-            /* Criacao da matriz jacobiana e do  vetor desvios */
-            montarSistema3(matriz_jacobiana, tamanho_sistema, vetor_x, vetor_F_negativo); /* matriz jacobiana inicial com x(0) sendo o vetor nulo de tamanho n */
-
-            // printf("\nMatriz jacobiana (k = 0):\n");
-            // imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
-            // printf("\nMatriz -F(x) (k = 0):\n");
-            // imprimirVetor(vetor_F_negativo, tamanho_sistema);
+            /* Criacao da matriz jacobiana e do vetor_F_negativo com o novo vetor x */
+            montarSistema3(matriz_jacobiana, tamanho_sistema, vetor_x, vetor_F_negativo); 
 
             k = 0; /* Iteracoes necessarias do metodo de newton */
             convergiu = 0;
@@ -233,32 +229,23 @@ int main() {
                 /* Decomposicao LU */
                 decomporLU(matriz_jacobiana, tamanho_sistema, vetor_p);
 
-                /* Solucao do sistema - obtem o vetor de correcao*/
+                /* Solucao do sistema -  produz um novo vetor de correcao */
                 resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_c, vetor_F_negativo, vetor_p);
-
-                // printf("\nVetor c (k = %d):\n", k);
-                // imprimirVetor(vetor_c, tamanho_sistema);
 
                 /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k)) */
                 somarVetores(vetor_x, vetor_c, tamanho_sistema);
 
-                // printf("\nVetor x(%d):\n", k + 1);
-                // imprimirVetor(vetor_x, tamanho_sistema);
-
                 /* Atualizacao da matriz jacobiana e do vetor_F_negativo com o novo vetor x */
                 montarSistema3(matriz_jacobiana, tamanho_sistema, vetor_x, vetor_F_negativo);
-
-                // printf("\nMatriz jacobiana (k = %d):\n", k);
-                // imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
 
                 /* Teste de convergencia */
                 desvio_max = obterDesvioMaximo(vetor_c, tamanho_sistema);
                 printf("Desvio: %lf\n", desvio_max);
                 if(desvio_max < erro_max) {
                     printf("\nConvergiu! Numero de iteracoes = %d\n", k);
-                    printf("Solucao do sistema:\n");
+                    printf("Solucao do sistema com erro maximo de %le:\n", erro_max);
                     imprimirVetor(vetor_x, tamanho_sistema);
-                    convergiu = 1; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_incognitas atual*/
+                    convergiu = 1; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_x atual*/
                 }
             }
 
@@ -325,7 +312,7 @@ int main() {
                 printf("Desvio: %lf\n", desvio_max);
                 if(desvio_max < erro_max) {
                     printf("Convergiu!\n");
-                    convergiu = 1; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_incognitas atual */
+                    convergiu = 1; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_x atual */
                 }
 
                 k++;
@@ -391,10 +378,10 @@ void imprimirVetor(double* vetor, int N) {
 
     for(i = 0; i < N; i++){
         if(vetor[i] > 0) {
-            printf("|  %e |\n", vetor[i]);
+            printf("|  %.3e |\n", vetor[i]);
         }
         else {
-            printf("| %e |\n", vetor[i]);
+            printf("| %.3e |\n", vetor[i]);
         }
     }
 }
@@ -563,7 +550,7 @@ void decomporLU(double **matriz_LU, int N, int *vetor_p) {
 
 
 void resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_x, double *vetor_b, int *vetor_p) {
-    /* Dada uma matriz LU, enxerta o vetor solução b e resolve o sistema para obter o vetor de correcao de incognitas c (vetor_correcao) */
+    /* Dada uma matriz LU, enxerta o vetor solução b e resolve o sistema para obter o vetor de correcao de incognitas vetor_c */
     double *y; /* vetor de incognitas: Ly = b */
     double soma, temp; /* variaveis auxiliares*/
     int i, j; /* variaveis auxiliares*/
@@ -659,13 +646,15 @@ void montarSistema2(double **matriz_jacobiana, double *vetor_x, double *vetor_F_
 
 
 void montarSistema3(double **matriz_jacobiana, int tamanho_sistema, double *vetor_x, double *vetor_F_negativo) {
-    /* Cria a matriz jacobiana para o Teste 2, usando o vetor de incognitas vetor_x */
-    for(int i = 0; i < tamanho_sistema; i++) {
-        for(int j = 0; j < tamanho_sistema; j++) {
-            if(i == j) {
-                matriz_jacobiana[i][j] = 2 - (pow(M_E, vetor_x[i]) / pow(tamanho_sistema, 2));
+    /* Cria a matriz jacobiana para o Teste 3, usando o vetor de incognitas vetor_x */
+    int i, j;
+
+    for(i = 0; i < tamanho_sistema; i++) {
+        for(j = 0; j < tamanho_sistema; j++) {
+            if(j == i) {
+                matriz_jacobiana[i][j] = 2 - (pow(M_E, vetor_x[i]) / pow((tamanho_sistema+1), 2));
             }
-            else if((i == j + 1 || j == i + 1) && i + 1 < tamanho_sistema && j + 1 < tamanho_sistema) {
+            else if(j == i - 1 || j == i + 1)  {
                 matriz_jacobiana[i][j] = -1;
             }
             else {
@@ -675,13 +664,13 @@ void montarSistema3(double **matriz_jacobiana, int tamanho_sistema, double *veto
     }
 
     /* Cria o vetor desvios -F[x(k)] usando o vetor_x(k) */
-    vetor_F_negativo[0] = -1 * (2 - (pow(M_E, vetor_x[0]) / pow(tamanho_sistema, 2)) - vetor_x[1]);
+    vetor_F_negativo[0] = -1 * (2*vetor_x[0] - (pow(M_E, vetor_x[0]) / pow((tamanho_sistema+1), 2)) - vetor_x[1]);
 
-    for(int k = 0; k < tamanho_sistema - 1; k++) {
-        vetor_F_negativo[k] =  vetor_x[k - 1] - (2 - (pow(M_E, vetor_x[k]) / pow(tamanho_sistema, 2))) - vetor_x[k + 1];
+    for(i = 1; i < tamanho_sistema - 1; i++) {
+        vetor_F_negativo[i] =  vetor_x[i - 1] - 2*vetor_x[i] + (pow(M_E, vetor_x[i]) / pow((tamanho_sistema+1), 2)) + vetor_x[i + 1];
     }
 
-    vetor_F_negativo[tamanho_sistema - 1] = -1 * (2 - (pow(M_E, vetor_x[tamanho_sistema - 1]) / pow(tamanho_sistema, 2)) - vetor_x[tamanho_sistema - 2]);
+    vetor_F_negativo[tamanho_sistema - 1] = vetor_x[tamanho_sistema - 2] - 2 * vetor_x[tamanho_sistema - 1] + (pow(M_E, vetor_x[tamanho_sistema - 1]) / pow((tamanho_sistema+1), 2));
 }
 
 
