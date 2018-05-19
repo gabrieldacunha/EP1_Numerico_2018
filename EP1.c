@@ -121,9 +121,8 @@ int main() {
 
                 /* Teste de convergencia */
                 desvio_max = obterDesvioMaximo(vetor_c, tamanho_sistema);
-                printf("Desvio: %lf\n", desvio_max);
                 if(desvio_max < erro_max) {
-                    printf("\nConvergiu! Numero de iteracoes = %d\n", k);
+                    printf("\nO metodo converge em %d iteracoes.\n", k);
                     printf("Solucao do sistema:\n");
                     imprimirVetor(vetor_x, tamanho_sistema);
                     convergiu = 1; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_x atual */
@@ -182,10 +181,9 @@ int main() {
 
                 /* Teste de convergencia */
                 desvio_max = obterDesvioMaximo(vetor_c, tamanho_sistema);
-                printf("Desvio: %lf\n", desvio_max);
                 if(desvio_max < erro_max) {
-                    printf("\nConvergiu! Numero de iteracoes = %d\n", k);
-                    printf("Solucao do sistema com erro maximo de %le:\n", erro_max);
+                    printf("\nO metodo converge em %d iteracoes.\n", k);
+                    printf("Solucao do sistema com erro maximo de %.1e:\n", erro_max);
                     imprimirVetor(vetor_x, tamanho_sistema);
                     convergiu = 1; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_x atual*/
                 }
@@ -240,10 +238,9 @@ int main() {
 
                 /* Teste de convergencia */
                 desvio_max = obterDesvioMaximo(vetor_c, tamanho_sistema);
-                printf("Desvio: %lf\n", desvio_max);
                 if(desvio_max < erro_max) {
-                    printf("\nConvergiu! Numero de iteracoes = %d\n", k);
-                    printf("Solucao do sistema com erro maximo de %le:\n", erro_max);
+                    printf("\nO metodo converge em %d iteracoes.\n", k);
+                    printf("Solucao do sistema com erro maximo de %.1e:\n", erro_max);
                     imprimirVetor(vetor_x, tamanho_sistema);
                     convergiu = 1; /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_x atual*/
                 }
@@ -377,7 +374,7 @@ void imprimirVetor(double* vetor, int N) {
     int i;
 
     for(i = 0; i < N; i++){
-        if(vetor[i] > 0) {
+        if(vetor[i] >= 0) {
             printf("|  %.3e |\n", vetor[i]);
         }
         else {
