@@ -33,9 +33,9 @@ void montarSistema2(double **matriz_jacobiana, double *vetor_x, double *vetor_F_
 void montarSistema3(double **matriz_jacobiana, int tamanho_sistema, double *vetor_x, double *vetor_F_negativo);
 
 /* >>>>>>>>>>> Funcoes de Sistemas de Potencia <<<<<<<<<<< */
-void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **matriz_G, double **matriz_B, double *vetor_x, double *vetor_F_negativo, int N1, int N2);
+void montarSistema4(double **matriz_jacobiana, double **matriz_PQ, double **matriz_PV, double **matriz_G, double **matriz_B, double *vetor_x, double *vetor_F_negativo, int N1, int N2);
 void obterDadosBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3);
-void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQPV, double **matriz_swing, double *vetor_x, int N1, int N2);
+void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQ, double **matriz_PV, double **matriz_swing, double *vetor_x, int N1, int N2);
 void criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matriz_B);
 
 /* ------------------------------------------------------------------------------------- */
@@ -58,9 +58,11 @@ int main() {
      /* Declaracao de variaveis - Sistemas de Potencia*/
     int numero_barras; /* Quantidade de barras = quantidade de linhas e colunas da matriz de admitâncias */
     int N1, N2, N3; /* Numero de barras PQ, PV e Swing, respectivamente */
+    double* solucao_inicial; /* Solucoes iniciais esperadas (Pesp e Qesp)*/
     double** matriz_G; /* Matriz de Condutancias */
     double** matriz_B; /* Matriz de Susceptancias */
-    double** matriz_PQPV; /* Matriz reunindo todas as barras PQ e PV do arquivo de dados de barras, ordenadamente */
+    double** matriz_PQ; /* Matriz reunindo todas as barras PQ do arquivo de dados de barras */
+    double** matriz_PV; /* Matriz reunindo todas as barras PV do arquivo de dados de barras */
     double** matriz_swing; /* Matriz reunindo todas as barras Swing do arquivo de dados de barras */
 
     /* Execucao do codigo */
@@ -270,14 +272,13 @@ int main() {
             vetor_p = criarVetorDinamicoInt(tamanho_sistema);
 
             /* Criacao da matriz de barras e preenchimento da solucao_inicial */
-            
-            matriz_PQPV = criarMatrizDinamica(N1 + N2, 5);
+            matriz_PQ = criarMatrizDinamica(N1, 5);
+            matriz_PV = criarMatrizDinamica(N2, 5);
             matriz_swing = criarMatrizDinamica(N3, 5);
-           
-            criarMatrizesBarras(nome_arquivo, matriz_PQPV, matriz_swing, vetor_x, N1, N2);
+            criarMatrizesBarras(nome_arquivo, matriz_PQ, matriz_PV, matriz_swing, vetor_x, N1, N2);
 
             /* Leitura do arquivo de barras e criacao da matriz de admitancias */
-             printf("Digite o nome do arquivo da matriz de admitancias nodais (com a terminacao .txt): ");
+            // printf("Digite o nome do arquivo da matriz de admitancias nodais (com a terminacao .txt): ");
             // scanf("%s", nome_arquivo);
             strcpy(nome_arquivo, "Redes_fornecidas/1_Stevenson/1_Stevenson_Ynodal.txt");
             matriz_G = criarMatrizDinamica(numero_barras, numero_barras);
@@ -290,9 +291,11 @@ int main() {
             while(1) { /* Executa o metodo de Newton ate atingir a convergencia */
 
                 /* Montagem do sistema linear com a estimativa atual */
-                montarSistema4(matriz_jacobiana, matriz_PQPV, matriz_G, matriz_B, vetor_x, vetor_F_negativo, N1, N2);
-                printf("\nMatriz PQPV\n");
-                imprimirMatriz(matriz_PQPV, N1 + N2, 5);
+                montarSistema4(matriz_jacobiana, matriz_PQ, matriz_PV, matriz_G, matriz_B, vetor_x, vetor_F_negativo, N1, N2);
+                printf("\nMatriz PQ\n");
+                imprimirMatriz(matriz_PQ, N1, 5);
+                printf("\nMatriz PV\n");
+                imprimirMatriz(matriz_PV, N2, 5);
                 printf("\nMatriz G\n");
                 imprimirMatriz(matriz_G, numero_barras, numero_barras);
                 printf("\nMatriz B\n");
@@ -303,6 +306,7 @@ int main() {
                 imprimirVetor(vetor_x, tamanho_sistema);
                 printf("\nVetor_F_negativo\n");
                 imprimirVetor(vetor_F_negativo, tamanho_sistema);
+
 
                 /* Teste de convergencia */
                 desvio_max = obterDesvioMaximo(vetor_F_negativo, tamanho_sistema);
@@ -344,7 +348,8 @@ int main() {
             free(vetor_x);
             free(vetor_F_negativo);
             free(vetor_c);
-            destruirMatriz(matriz_PQPV, N1 + N2);
+            destruirMatriz(matriz_PQ, N1);
+            destruirMatriz(matriz_PV, N2);
             destruirMatriz(matriz_swing, N3);
             destruirMatriz(matriz_jacobiana, tamanho_sistema);
             destruirMatriz(matriz_B, numero_barras);
@@ -696,106 +701,96 @@ void montarSistema3(double **matriz_jacobiana, int tamanho_sistema, double *veto
 
 /* >>>>>>>>>>> Funcoes de Sistemas de Potencia <<<<<<<<<<< */
 
-void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **matriz_G, double **matriz_B, double *vetor_x, double *vetor_F_negativo, int N1, int N2) {
+void montarSistema4(double **matriz_jacobiana, double **matriz_PQ, double **matriz_PV, double **matriz_G, double **matriz_B, double *vetor_x, double *vetor_F_negativo, int N1, int N2) {
     /* Preenche o sistema linear para o teste 4 */
     int barra, i; /* Variaveis auxiliares dos loops*/
     int j; /* Variavel auxiliar para cada barra */
     int k; /* Variavel auxiliar para a iteracao do somatorio */
-    double somatorio_1, somatorio_2, somatorio_3; /* Variaveis auxiliares para os somatorios da matriz jacobiana */
+    double somatorio_1, somatorio_2, somatorio_3, somatorio_4; /* Variaveis auxiliares para os somatorios da matriz jacobiana */
 
-    /* Preenchimento da parte superior da jacobiana */
-    for(barra = 0; barra < N1 + N2; barra++) {
-        j = matriz_PQPV[barra][0]; /* j armazena o numero da barra em questao */
-        somatorio_1 = 0;
-        somatorio_2 = 0;
-        somatorio_3 = 0;
-
-        /* Preenchimento do quadrante superior esquerdo da jacobiana */
-        for(i = 0; i < N1 + N2; i++) {
-            k = matriz_PQPV[i][0]; /* k armazena o numero da barra em questao */
-            if(k != j){ 
-                
-                /* Derivada parcial de fpj em relacao a theta k */
-                matriz_jacobiana[barra][i] = -1 * matriz_PQPV[barra][2] * matriz_PQPV[i][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
-                
-                /* Somatorio usado em Theta j */
-                somatorio_1 += matriz_PQPV[i][2] * (matriz_G[j][k]*sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
-                
-                /*Somatorio usado em -fpj*/
-                somatorio_3 += matriz_PQPV[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
-            }
-        }
-
-        matriz_jacobiana[barra][barra] = matriz_PQPV[barra][2] * somatorio_1; /* Derivada parcial de fpj em função de Theta j */
-
-        /* Preenchimento do quadrante superior direito da jacobiana */
-        for(i=0; i < N1; i++) {
-            k = matriz_PQPV[i][0]; /* k armazena o numero da barra em questao */
-             if(k != j){ 
-                
-                /* Derivada parcial de fpj em funcao de Vk */
-                matriz_jacobiana[barra][i+N1+N2] = matriz_PQPV[barra][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
-                
-                /* Somatorio usado em Vj: */
-                somatorio_2 += matriz_PQPV[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
-            }
-        }
-
-        matriz_jacobiana[barra][barra+N1+N2] = 2 * matriz_PQPV[barra][2] * matriz_G[j][j] + somatorio_2; /* Derivada parcial de fpj em função de Vj */
-        
-        /* Preenchimento do vetor_F_negativo (-fpj)*/
-        if (barra < N1){
-            /* Para barras PQ */
-            vetor_F_negativo[barra] = -1* matriz_PQPV[barra][2] * matriz_PQPV[barra][2] * matriz_G[j][j] - matriz_PQPV[barra][2] * somatorio_3; /* -fpj = -Pcalc */
-        } else {
-            /* Para barras PV */
-            vetor_F_negativo[barra] = -1* matriz_PQPV[barra][2] * matriz_PQPV[barra][2] * matriz_G[j][j] - matriz_PQPV[barra][2] * somatorio_3 + matriz_PQPV[barra][3]; /* -fpj = -(Pcalc - Pesp) */
-        }
-    }
-
-    /* Preenchimento da parte inferior da jacobiana */
+    /* Para barras PQ */
     for(barra = 0; barra < N1; barra++) {
-        j = matriz_PQPV[barra][0]; /* j armazena o numero da barra em questao */
+        j = matriz_PQ[barra][0]; /* j armazena o numero da barra em questao */
+
         somatorio_1 = 0;
         somatorio_2 = 0;
         somatorio_3 = 0;
+        somatorio_4 = 0;
 
-        /* Preenchimento do quadrante inferior esquerdo */
-        for(i = 0; i < N1 + N2; i++) {
-            k = matriz_PQPV[i][0]; /* k armazena o numero da barra em questao */
-            if(k != j) {
-                
+        for(i=0; i < N1; i++) {
+            k = matriz_PQ[i][0]; /*k armazena o numero da barra em questao*/
+            if(i != barra){
+                /* Preenchimento do quadrante 1 do quadrante 1 da matriz jacobiana - quadrantes 2 e 3 serao nulos */
+                /* Derivada parcial de fpj em funcao de Thetak */
+                matriz_jacobiana[barra][i] = -1 * matriz_PQ[barra][2] * matriz_PQ[i][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
+                /* Sera usado para da derivada parcial de fpj em funcao de Thetaj: */
+                somatorio_1 += matriz_PQ[i][2] * (matriz_G[j][k]*sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
+
+                /* Preenchimento do quadrante 2 da matriz jacobiana - A metade inferior sera nula */
+                /* Derivada parcial de fpj em funcao de Vk */
+                matriz_jacobiana[barra][i+N1+N2] = matriz_PQ[barra][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
+                /* Sera usado para da derivada parcial de fpj em funcao de Vj: */
+                somatorio_2 += matriz_PQ[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
+
+                /* Preenchimento do quadrante 3 da matriz jacobiana - a metade direita sera nula */
                 /* Derivada parcial de fqj em funcao de Theta k */
-                matriz_jacobiana[barra+N1+N2][i] = -1 * matriz_PQPV[barra][2] * matriz_PQPV[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
-                
-                /* Sera usado em Theta j e na -fpj: */
-                somatorio_1 += matriz_PQPV[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
+                matriz_jacobiana[barra+N1+N2][i] = -1 * matriz_PQ[barra][2] * matriz_PQ[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
+                /* Sera usado para da derivada parcial de fqj em funcao de Thetaj e na fpj: */
+                somatorio_3 += matriz_PQ[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
 
-                /* Sera usado na -fqj*/
-                somatorio_3 += matriz_PQPV[i][2] * (matriz_G[j][k]*sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
+                /* Preenchimento do quadrante 4 da matriz jacobiana - Derivada parcial de fqj em função de Vk */
+                matriz_jacobiana[barra+N1+N2][i+N1+N2] = -1 * matriz_PQ[barra][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
+                /* Sera usado para da derivada parcial de fqj em funcao de Vj: */
+                somatorio_4 += matriz_PQ[i][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
             }
         }
         
-        matriz_jacobiana[barra+N1+N2][barra] = matriz_PQPV[barra][2] * somatorio_1; /* Derivada parcial de fqj em função de Theta j */
 
-        /* Preenchimento do quadrante inferior direito da jacobiana */
-        for(i = 0; i < N1; i++) {
-            k = matriz_PQPV[i][0]; /* k armazena o numero da barra em questao */
-            if(k != j) {
-                
-                /* Derivada parcial de fqj em relacao a Vk */
-                matriz_jacobiana[barra+N1+N2][i+N1+N2] = -1 * matriz_PQPV[barra][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
-                
-                /* Somatorio usado na derivada parcial de fqj em relacao a Vj */
-                somatorio_2 += matriz_PQPV[i][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
-            }
-        }
+        /* Quadrante 1 - Derivada parcial de fpj em função de Theta j */
+        matriz_jacobiana[barra][barra] = matriz_PQ[barra][2] * somatorio_1; 
 
-        matriz_jacobiana[barra+N1+N2][barra+N1+N2] = -2 * matriz_PQPV[barra][2] * matriz_B[j][j] - somatorio_2; /* Derivada parcial de fqj em função de Vj */
-        
+        /* Quadrante 2 - Derivada parcial de fpj em função de Vj */
+        matriz_jacobiana[barra][barra+N1+N2] = 2 * matriz_PQ[barra][2] * matriz_G[j][j] + somatorio_2;
+
+        /* Quadrante 3 - Derivada parcial de fqj em função de Theta j */
+        matriz_jacobiana[barra+N1+N2][barra] = matriz_PQ[barra][2] * somatorio_3; 
+
+        /* Quadrante 4 - Derivada parcial de fqj em função de Vj */
+        matriz_jacobiana[barra+N1+N2][barra+N1+N2] = -2 * matriz_PQ[barra][2] * matriz_B[j][j] - somatorio_4;
+
         /* Preenchimento do vetor_F_negativo */
-        vetor_F_negativo[barra+N1+N2] = matriz_PQPV[barra][2] * matriz_PQPV[barra][2] * matriz_B[j][j] + matriz_PQPV[barra][2] * somatorio_3; /* -fqj = -Qcalc */
+        vetor_F_negativo[barra] = -1* matriz_PQ[barra][2] * matriz_PQ[barra][2] * matriz_G[j][j] - matriz_PQ[barra][2] * somatorio_3; /* -fpj = -Pcalc */
+        vetor_F_negativo[barra+N1+N2] = matriz_PQ[barra][2] * matriz_PQ[barra][2] * matriz_B[j][j] + matriz_PQ[barra][2] * somatorio_1; /* -fqj = -Qcalc */
+
     }
+
+    /* Para barras PV - Preenchimento do quadrante 4 do quadrante 1 da matriz jacobiana */
+    for(barra = 0; barra < N2; barra++) {
+        j = matriz_PV[barra][0]; /* j armazena o numero da barra em questao */
+
+        somatorio_1 = 0;
+        somatorio_3 = 0;
+        
+        for(i = 0; i < N2; i++) {
+            k = matriz_PV[i][0]; /* k armazena o numero da barra em questao */
+            if(k != j) {
+                /* Derivada parcial de fpj em função de Theta k (barras PV) */
+                matriz_jacobiana[barra+N1][i+N1] = -1 * matriz_PV[barra][2] * matriz_PV[i][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
+                /* Sera usado para da derivada parcial de fpj em funcao de Thetaj: */
+                somatorio_1 += matriz_PV[i][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
+                /* Sera usado em fpj: */
+                somatorio_3 += matriz_PV[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
+            }
+        }
+
+        /* Derivada parcial de fpj em função de Theta j (barras PQ e PV) */
+        matriz_jacobiana[barra+N1][barra+N1] = matriz_PV[barra][2] * somatorio_1;
+
+        /* Preenchimento do vetor_F_negativo */
+        vetor_F_negativo[barra+N1] = -1* matriz_PQ[barra][2] * matriz_PQ[barra][2] * matriz_G[j][j] - matriz_PQ[barra][2] * somatorio_3 + matriz_PV[barra][3]; /* -(Pcalc - Pesp) */
+    }
+
+    /* Se a barra for Swing, ela nao contribui com o sistema linear */
 }
 
 
@@ -853,7 +848,7 @@ void obterDadosBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3
 }
 
 
-void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQPV, double **matriz_swing, double *vetor_x, int N1, int N2) {
+void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQ, double **matriz_PV, double **matriz_swing, double *vetor_x, int N1, int N2) {
     /* Cria matriz_PQ, matriz_PV e matriz_swing de acordo com o arquivo de dados de barras fornecido */
     char linha[512]; /* Precisa mesmo ser 512? */
     int numero_barras;
@@ -863,12 +858,7 @@ void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQPV, double **matr
     double tensao_nominal; /* Tensao nominal de fase */
     double parametro_1; /* PQ: P absorvida nominal; PV: P de geracao; Swing: modulo da tensao */
     double parametro_2; /* PQ: Q absorvida nominal; PV: modulo da tensao; Swing: fase da tensao */
-    int i, j, k; /* Variaveis auxiliares */
-    double **matriz_PV;
-    double **matriz_PQ;
-
-    matriz_PQ = criarMatrizDinamica(N1, 5); /* Matriz auxiliar*/
-    matriz_PV = criarMatrizDinamica(N2, 5); /* Matriz auxiliar*/
+    int i, j, k, n; /* Variaveis auxiliares */
 
     FILE *arquivo = fopen(nome_arquivo, "r");
 
@@ -893,7 +883,6 @@ void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQPV, double **matr
                 matriz_PQ[i][2] = tensao_nominal;
                 matriz_PQ[i][3] = parametro_1;
                 matriz_PQ[i][4] = parametro_2;
-
                 vetor_x[i+N1+N2] = tensao_nominal; /* Armazena a tensao nominal das barras PQ no vetor de incognitas */
                 i++;
                 break;
@@ -915,37 +904,10 @@ void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQPV, double **matr
                 matriz_swing[k][4] = parametro_2;
                 k++;
                 break;
-
             default:
                 printf ("Tipo de barra nao definido\n");
         }
     }
-    printf("Matriz PQ\n");
-    imprimirMatriz(matriz_PQ, N1, N1);
-    printf("\nMatriz PV\n");
-    imprimirMatriz(matriz_PV, N2, N2);
-
-    /* Preenche matriz PQPV de forma ordenada: primeiro as PQ, depois as PV*/
-    for(i = 0; i < N1; i++){
-
-        matriz_PQPV[i][0] = matriz_PQ[i][0];
-        matriz_PQPV[i][1] = matriz_PQ[i][1];
-        matriz_PQPV[i][2] = matriz_PQ[i][2];
-        matriz_PQPV[i][3] = matriz_PQ[i][3];
-        matriz_PQPV[i][4] = matriz_PQ[i][4];
-    }
-
-    for(i = N1; i < N1 + N2; i++){
-        matriz_PQPV[i][0] = matriz_PV[i][0];
-        matriz_PQPV[i][1] = matriz_PV[i][1];
-        matriz_PQPV[i][2] = matriz_PV[i][2];
-        matriz_PQPV[i][3] = matriz_PV[i][3];
-        matriz_PQPV[i][4] = matriz_PV[i][4];
-    }
-
-    /* Libera a memoria das matrizes auxiliares */
-    destruirMatriz(matriz_PQ, N1);
-    destruirMatriz(matriz_PV, N2);
 
     fclose(arquivo);
 }
