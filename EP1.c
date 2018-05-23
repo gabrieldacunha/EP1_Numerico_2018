@@ -101,7 +101,7 @@ int main() {
             while(convergiu == 0) { /* Executa o metodo de Newton ate atingir a convergencia */
 
                 k++; /* Aumenta o passo da iteracao */
-                
+
                 /* Decomposicao LU */
                 decomporLU(matriz_jacobiana, tamanho_sistema, vetor_p);
 
@@ -162,7 +162,7 @@ int main() {
             k = 0; /* Iteracoes necessarias do metodo de newton */
             convergiu = 0;
             while(convergiu == 0) { /* Executa o metodo de Newton ate atingir a convergencia */
-                
+
                 k++; /* Aumenta o passo da iteracao*/
 
                 /* Decomposicao LU */
@@ -214,14 +214,14 @@ int main() {
             }
 
             /* Criacao da matriz jacobiana e do vetor_F_negativo com o vetor_x nulo*/
-            montarSistema3(matriz_jacobiana, tamanho_sistema, vetor_x, vetor_F_negativo); 
+            montarSistema3(matriz_jacobiana, tamanho_sistema, vetor_x, vetor_F_negativo);
 
             k = 0; /* Iteracoes necessarias do metodo de newton */
             convergiu = 0;
             while(convergiu == 0) { /* Executa o metodo de Newton ate atingir a convergencia */
 
                 k++; /* Aumenta o passo da iteracao*/
-                
+
                 /* Decomposicao LU */
                 decomporLU(matriz_jacobiana, tamanho_sistema, vetor_p);
 
@@ -269,10 +269,10 @@ int main() {
             vetor_p = criarVetorDinamicoInt(tamanho_sistema);
 
             /* Criacao da matriz de barras e preenchimento da solucao_inicial */
-            
+
             matriz_PQPV = criarMatrizDinamica(N1 + N2, 5);
             matriz_swing = criarMatrizDinamica(N3, 5);
-           
+
             criarMatrizesBarras(nome_arquivo, matriz_PQPV, matriz_swing, vetor_x, N1, N2);
 
             /* Leitura do arquivo de barras e criacao da matriz de admitancias */
@@ -286,11 +286,13 @@ int main() {
             erro_max = 0.001; /* 10^-6 */
 
             k = 0;
-            while(1) { /* Executa o metodo de Newton ate atingir a convergencia */
+            convergiu = 0;
+            while(convergiu == 0) { /* Executa o metodo de Newton ate atingir a convergencia */
+                printf("\nIteracao %d\n", k);
 
                 /* Montagem do sistema linear com a estimativa atual */
                 montarSistema4(matriz_jacobiana, matriz_PQPV, matriz_G, matriz_B, vetor_x, vetor_F_negativo, N1, N2);
-                
+
                 // printf("\nMatriz PQPV\n");
                 // imprimirMatriz(matriz_PQPV, N1 + N2, 5);
                 // printf("\nMatriz G\n");
@@ -303,18 +305,20 @@ int main() {
                 // imprimirVetor(vetor_x, tamanho_sistema);
                 // printf("\nVetor_F_negativo\n");
                 // imprimirVetor(vetor_F_negativo, tamanho_sistema);
+                // break;
 
                 /* Teste de convergencia */
                 desvio_max = obterDesvioMaximo(vetor_F_negativo, tamanho_sistema);
-                printf("%le\n", desvio_max);
-                if(desvio_max < erro_max) {
+                printf("Desvio: %le\n", desvio_max);
+                if(desvio_max < erro_max || k > 10) {
                     /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_x atual*/
                     printf("\nO metodo converge em %d iteracoes.\n", k);
                     printf("Solucao do sistema com erro maximo de %.1e:\n", erro_max);
                     imprimirVetor(vetor_x, tamanho_sistema);
+                    convergiu = 1;
                     break; /* Economiza processamento desnecessario */
-                }   
-                
+                }
+
                 /* Decomposicao LU */
                 decomporLU(matriz_jacobiana, tamanho_sistema, vetor_p);
 
@@ -322,17 +326,17 @@ int main() {
                 // imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
                 // printf("\nVetor p\n");
                 // imprimirVetorInt(vetor_p, tamanho_sistema);
-                
+
                 /* Solucao do sistema - produz um novo vetor de correcao*/
                 vetor_c = resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_F_negativo, vetor_p);
-                
-                // printf("\nVetor c\n");
-                // imprimirVetor(vetor_c, tamanho_sistema);
+
+                printf("\nVetor c\n");
+                imprimirVetor(vetor_c, tamanho_sistema);
 
                 /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k)) */
                 somarVetores(vetor_x, vetor_c, tamanho_sistema);
                 free(vetor_c);
-                
+
                 // printf("\nNovo vetor x\n");
                 // imprimirVetor(vetor_x, tamanho_sistema);
 
@@ -514,7 +518,7 @@ void decomporLU(double **matriz_LU, int N, int *vetor_p) {
             for(j = 0; j <= k-1; j++) {
                 somatorio += matriz_LU[i][j] * matriz_LU[j][k];
             }
-            matriz_LU[i][k] -= somatorio; 
+            matriz_LU[i][k] -= somatorio;
         }
 
         /* Condensacao pivotal */
@@ -695,14 +699,14 @@ void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **ma
         /* Preenchimento do quadrante superior esquerdo da jacobiana */
         for(i = 0; i < N1 + N2; i++) {
             k = matriz_PQPV[i][0]; /* k armazena o numero da barra em questao */
-            if(k != j){ 
-                
+            if(k != j) {
+
                 /* Derivada parcial de fpj em relacao a theta k */
                 matriz_jacobiana[barra][i] = -1 * matriz_PQPV[barra][2] * matriz_PQPV[i][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
-                
+
                 /* Somatorio usado em Theta j */
                 somatorio_1 += matriz_PQPV[i][2] * (matriz_G[j][k]*sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
-                
+
                 /*Somatorio usado em -fpj*/
                 somatorio_3 += matriz_PQPV[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
             }
@@ -713,25 +717,25 @@ void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **ma
         /* Preenchimento do quadrante superior direito da jacobiana */
         for(i=0; i < N1; i++) {
             k = matriz_PQPV[i][0]; /* k armazena o numero da barra em questao */
-             if(k != j){ 
-                
+             if(k != j) {
+
                 /* Derivada parcial de fpj em funcao de Vk */
                 matriz_jacobiana[barra][i+N1+N2] = matriz_PQPV[barra][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
-                
+
                 /* Somatorio usado em Vj: */
                 somatorio_2 += matriz_PQPV[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
             }
         }
 
         matriz_jacobiana[barra][barra+N1+N2] = 2 * matriz_PQPV[barra][2] * matriz_G[j][j] + somatorio_2; /* Derivada parcial de fpj em função de Vj */
-        
+
         /* Preenchimento do vetor_F_negativo (-fpj)*/
-        if (barra < N1){
+        if (barra < N1) {
             /* Para barras PQ */
-            vetor_F_negativo[barra] = -1* matriz_PQPV[barra][2] * matriz_PQPV[barra][2] * matriz_G[j][j] - matriz_PQPV[barra][2] * somatorio_3; /* -fpj = -Pcalc */
+            vetor_F_negativo[barra] = -1 * matriz_PQPV[barra][2] * matriz_PQPV[barra][2] * matriz_G[j][j] - matriz_PQPV[barra][2] * somatorio_3; /* -fpj = -Pcalc */
         } else {
             /* Para barras PV */
-            vetor_F_negativo[barra] = -1* matriz_PQPV[barra][2] * matriz_PQPV[barra][2] * matriz_G[j][j] - matriz_PQPV[barra][2] * somatorio_3 + matriz_PQPV[barra][3]; /* -fpj = -(Pcalc - Pesp) */
+            vetor_F_negativo[barra] = -1 * matriz_PQPV[barra][2] * matriz_PQPV[barra][2] * matriz_G[j][j] - matriz_PQPV[barra][2] * somatorio_3 + matriz_PQPV[barra][3]; /* -fpj = -(Pcalc - Pesp) */
         }
     }
 
@@ -746,10 +750,10 @@ void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **ma
         for(i = 0; i < N1 + N2; i++) {
             k = matriz_PQPV[i][0]; /* k armazena o numero da barra em questao */
             if(k != j) {
-                
+
                 /* Derivada parcial de fqj em funcao de Theta k */
                 matriz_jacobiana[barra+N1+N2][i] = -1 * matriz_PQPV[barra][2] * matriz_PQPV[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
-                
+
                 /* Sera usado em Theta j e na -fpj: */
                 somatorio_1 += matriz_PQPV[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
 
@@ -757,24 +761,24 @@ void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **ma
                 somatorio_3 += matriz_PQPV[i][2] * (matriz_G[j][k]*sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
             }
         }
-        
+
         matriz_jacobiana[barra+N1+N2][barra] = matriz_PQPV[barra][2] * somatorio_1; /* Derivada parcial de fqj em função de Theta j */
 
         /* Preenchimento do quadrante inferior direito da jacobiana */
         for(i = 0; i < N1; i++) {
             k = matriz_PQPV[i][0]; /* k armazena o numero da barra em questao */
             if(k != j) {
-                
+
                 /* Derivada parcial de fqj em relacao a Vk */
                 matriz_jacobiana[barra+N1+N2][i+N1+N2] = -1 * matriz_PQPV[barra][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
-                
+
                 /* Somatorio usado na derivada parcial de fqj em relacao a Vj */
                 somatorio_2 += matriz_PQPV[i][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
             }
         }
 
         matriz_jacobiana[barra+N1+N2][barra+N1+N2] = -2 * matriz_PQPV[barra][2] * matriz_B[j][j] - somatorio_2; /* Derivada parcial de fqj em função de Vj */
-        
+
         /* Preenchimento do vetor_F_negativo */
         vetor_F_negativo[barra+N1+N2] = matriz_PQPV[barra][2] * matriz_PQPV[barra][2] * matriz_B[j][j] + matriz_PQPV[barra][2] * somatorio_3; /* -fqj = -Qcalc */
     }
