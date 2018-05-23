@@ -294,24 +294,24 @@ int main() {
                 /* Montagem do sistema linear com a estimativa atual */
                 montarSistema4(matriz_jacobiana, matriz_PQPV, matriz_G, matriz_B, vetor_x, vetor_F_negativo, N1, N2);
 
-                printf("\nMatriz PQPV\n");
-                imprimirMatriz(matriz_PQPV, N1 + N2, 5);
+                // printf("\nMatriz PQPV\n");
+                // imprimirMatriz(matriz_PQPV, N1 + N2, 5);
                 // printf("\nMatriz G\n");
                 // imprimirMatriz(matriz_G, numero_barras, numero_barras);
                 // printf("\nMatriz B\n");
                 // imprimirMatriz(matriz_B, numero_barras, numero_barras);
-                printf("\nMatriz Jacobiana\n");
-                imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
-                printf("\nVetor x\n");
-                imprimirVetor(vetor_x, tamanho_sistema);
-                printf("\nVetor_F_negativo\n");
-                imprimirVetor(vetor_F_negativo, tamanho_sistema);
+                // printf("\nMatriz Jacobiana\n");
+                // imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
+                // printf("\nVetor x\n");
+                // imprimirVetor(vetor_x, tamanho_sistema);
+                // printf("\nVetor_F_negativo\n");
+                // imprimirVetor(vetor_F_negativo, tamanho_sistema);
                 // break;
 
                 /* Teste de convergencia */
                 desvio_max = obterDesvioMaximo(vetor_F_negativo, tamanho_sistema);
                 printf("Desvio: %le\n", desvio_max);
-                if(desvio_max < erro_max || k > 5) {
+                if(desvio_max < erro_max) {
                     /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_x atual*/
                     printf("\nO metodo converge em %d iteracoes.\n", k);
                     printf("Solucao do sistema com erro maximo de %.1e:\n", erro_max);
@@ -566,41 +566,30 @@ void resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_x, double
         vetor_b[j] = temp;
     }
 
-    /* Enxerta o vetor de solucoes na matriz_LU */
-    for(i = 0; i < m; i++) {
-        matriz_LU[i] = realloc(matriz_LU[i], (n+1) * sizeof (double));
-        matriz_LU[i][n] = vetor_b[i];
-    }
-
     /* Resolve a parte L, achando o vetor de incognitas y */
     y = criarVetorDinamico(m);
-    y[0] = matriz_LU[0][n];
+    y[0] = vetor_b[0];
 
     for(i = 1; i < m; i++) {
         soma = 0;
         for(j=i-1; j >= 0; j--) {
             soma += matriz_LU[i][j] * y[j];
         }
-        y[i] = (matriz_LU[i][n] - soma);
-    }
-
-    /* Substitui o vetor de solucoes b por y */
-    for(i = 0; i < m; i++) {
-        matriz_LU[i][n] = y[i];
-    }
-    free(y); /* Desaloca a memoria de y, que ja foi usado */
+        y[i] = (vetor_b[i] - soma);
+    }    
 
     /* Resolve a parte U */
     // x = criarVetorDinamico(m);
-    vetor_x[m-1] = matriz_LU[m-1][n] / matriz_LU[m-1][n-1];
+    vetor_x[m-1] = y[m-1] / matriz_LU[m-1][n-1];
 
     for(i = m - 2; i >= 0; i--) {
         soma = 0;
         for(j = i + 1; j < n; j++) {
             soma += matriz_LU[i][j] * vetor_x[j];
         }
-        vetor_x[i] = (matriz_LU[i][n] - soma) / matriz_LU[i][i];
+        vetor_x[i] = (y[i] - soma) / matriz_LU[i][i];
     }
+    free(y); /* Desaloca a memoria de y, que ja foi usado */
 }
 
 
