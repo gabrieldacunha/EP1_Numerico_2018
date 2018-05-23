@@ -26,7 +26,7 @@ void destruirMatriz(double** matriz, int m);
 
 /* >>>>>>>>>>> Funcoes do Metodo de Newton <<<<<<<<<<< */
 void decomporLU(double **matriz_LU, int N, int *vetor_p);
-double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int *vetor_p);
+void resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_x, double *vetor_b, int *vetor_p);
 double obterDesvioMaximo(double *vetor_c, int N);
 void montarSistema2(double **matriz_jacobiana, double *vetor_x, double *vetor_F_negativo);
 void montarSistema3(double **matriz_jacobiana, int tamanho_sistema, double *vetor_x, double *vetor_F_negativo);
@@ -106,7 +106,7 @@ int main() {
                 decomporLU(matriz_jacobiana, tamanho_sistema, vetor_p);
 
                 /* Solucao do sistema - produz um novo vetor de correcao */
-                vetor_c = resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_F_negativo, vetor_p);
+                resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_c, vetor_F_negativo, vetor_p);
 
                 /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k)) */
                 somarVetores(vetor_x, vetor_c, tamanho_sistema);
@@ -169,7 +169,7 @@ int main() {
                 decomporLU(matriz_jacobiana, tamanho_sistema, vetor_p);
 
                 /* Solucao do sistema - produz um novo vetor de correcao */
-                vetor_c = resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_F_negativo, vetor_p);
+                resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_c, vetor_F_negativo, vetor_p);
 
                 /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k)) */
                 somarVetores(vetor_x, vetor_c, tamanho_sistema);
@@ -226,7 +226,7 @@ int main() {
                 decomporLU(matriz_jacobiana, tamanho_sistema, vetor_p);
 
                 /* Solucao do sistema -  produz um novo vetor de correcao */
-                vetor_c = resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_F_negativo, vetor_p);
+                resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_c, vetor_F_negativo, vetor_p);
 
                 /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k)) */
                 somarVetores(vetor_x, vetor_c, tamanho_sistema);
@@ -264,8 +264,9 @@ int main() {
             /* Dimensiona o sistema linear a ser resolvido */
             tamanho_sistema = 2 * N1 + N2;
             matriz_jacobiana = criarMatrizDinamica(tamanho_sistema, tamanho_sistema);
-            vetor_x = criarVetorDinamico(tamanho_sistema);
             vetor_F_negativo = criarVetorDinamico(tamanho_sistema);
+            vetor_x = criarVetorDinamico(tamanho_sistema);
+            vetor_c = criarVetorDinamico(tamanho_sistema);
             vetor_p = criarVetorDinamicoInt(tamanho_sistema);
 
             /* Criacao da matriz de barras e preenchimento da solucao_inicial */
@@ -293,24 +294,24 @@ int main() {
                 /* Montagem do sistema linear com a estimativa atual */
                 montarSistema4(matriz_jacobiana, matriz_PQPV, matriz_G, matriz_B, vetor_x, vetor_F_negativo, N1, N2);
 
-                // printf("\nMatriz PQPV\n");
-                // imprimirMatriz(matriz_PQPV, N1 + N2, 5);
+                printf("\nMatriz PQPV\n");
+                imprimirMatriz(matriz_PQPV, N1 + N2, 5);
                 // printf("\nMatriz G\n");
                 // imprimirMatriz(matriz_G, numero_barras, numero_barras);
                 // printf("\nMatriz B\n");
                 // imprimirMatriz(matriz_B, numero_barras, numero_barras);
-                // printf("\nMatriz Jacobiana\n");
-                // imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
-                // printf("\nVetor x\n");
-                // imprimirVetor(vetor_x, tamanho_sistema);
-                // printf("\nVetor_F_negativo\n");
-                // imprimirVetor(vetor_F_negativo, tamanho_sistema);
+                printf("\nMatriz Jacobiana\n");
+                imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
+                printf("\nVetor x\n");
+                imprimirVetor(vetor_x, tamanho_sistema);
+                printf("\nVetor_F_negativo\n");
+                imprimirVetor(vetor_F_negativo, tamanho_sistema);
                 // break;
 
                 /* Teste de convergencia */
                 desvio_max = obterDesvioMaximo(vetor_F_negativo, tamanho_sistema);
                 printf("Desvio: %le\n", desvio_max);
-                if(desvio_max < erro_max || k > 10) {
+                if(desvio_max < erro_max || k > 5) {
                     /* O sistema atinge a convergencia e a solucao sera dada pelo vetor_x atual*/
                     printf("\nO metodo converge em %d iteracoes.\n", k);
                     printf("Solucao do sistema com erro maximo de %.1e:\n", erro_max);
@@ -328,14 +329,13 @@ int main() {
                 // imprimirVetorInt(vetor_p, tamanho_sistema);
 
                 /* Solucao do sistema - produz um novo vetor de correcao*/
-                vetor_c = resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_F_negativo, vetor_p);
+                resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_c, vetor_F_negativo, vetor_p);
 
-                printf("\nVetor c\n");
-                imprimirVetor(vetor_c, tamanho_sistema);
+                // printf("\nVetor c\n");
+                // imprimirVetor(vetor_c, tamanho_sistema);
 
                 /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k)) */
                 somarVetores(vetor_x, vetor_c, tamanho_sistema);
-                free(vetor_c);
 
                 // printf("\nNovo vetor x\n");
                 // imprimirVetor(vetor_x, tamanho_sistema);
@@ -551,10 +551,10 @@ void decomporLU(double **matriz_LU, int N, int *vetor_p) {
 }
 
 
-double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int *vetor_p) {
+void resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_x, double *vetor_b, int *vetor_p) {
     /* Dada uma matriz LU, enxerta o vetor solução b e resolve o sistema para obter o vetor de correcao de incognitas vetor_c */
     double *y; /* vetor de incognitas: Ly = b */
-    double *x; /* vetor de incognitas Ux = y*/
+    // double *x; /* vetor de incognitas Ux = y*/
     double soma, temp; /* variaveis auxiliares*/
     int i, j; /* variaveis auxiliares*/
 
@@ -591,18 +591,16 @@ double* resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_b, int
     free(y); /* Desaloca a memoria de y, que ja foi usado */
 
     /* Resolve a parte U */
-    x = criarVetorDinamico(m);
-    x[m-1] = matriz_LU[m-1][n] / matriz_LU[m-1][n-1];
+    // x = criarVetorDinamico(m);
+    vetor_x[m-1] = matriz_LU[m-1][n] / matriz_LU[m-1][n-1];
 
     for(i = m - 2; i >= 0; i--) {
         soma = 0;
         for(j = i + 1; j < n; j++) {
-            soma += matriz_LU[i][j] * x[j];
+            soma += matriz_LU[i][j] * vetor_x[j];
         }
-        x[i] = (matriz_LU[i][n] - soma) / matriz_LU[i][i];
+        vetor_x[i] = (matriz_LU[i][n] - soma) / matriz_LU[i][i];
     }
-
-    return x;
 }
 
 
