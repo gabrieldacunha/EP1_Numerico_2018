@@ -49,17 +49,17 @@ int main() {
     int* vetor_p; /* Vetor de permutacoes usado na decomposicao LU */
     double** matriz_jacobiana; /* Matriz jacobiana de derivadas parciais */
     double* vetor_x; /* Vetor de incognitas do sistema */
-    double* vetor_c; /* Vetor c a ser iterado em cada passo do metodo de Newton*/
+    double* vetor_c; /* Vetor de correcoes a ser iterado em cada passo do metodo de Newton*/
     double* vetor_F_negativo; /* Vetor desvio de solucao calculada  */
     double desvio_max; /* Desvio maximo do vetor de solucoes calculado a cada iteracao */
     double erro_max; /* Estabelece a tolerancia maxima do desvio maximo calculado */
 
-     /* Declaracao de variaveis - Sistemas de Potencia*/
+    /* Declaracao de variaveis - Sistemas de Potencia*/
     int numero_barras; /* Quantidade de barras = quantidade de linhas e colunas da matriz de admitâncias */
     int N1, N2, N3; /* Numero de barras PQ, PV e Swing, respectivamente */
     double** matriz_G; /* Matriz de Condutancias */
     double** matriz_B; /* Matriz de Susceptancias */
-    double** matriz_PQPV; /* Matriz reunindo todas as barras PQ e PV do arquivo de dados de barras, ordenadamente */
+    double** matriz_PQPV; /* Matriz reunindo todas as barras PQ e PV do arquivo de dados de barras ordenadamente */
     double** matriz_swing; /* Matriz reunindo todas as barras Swing do arquivo de dados de barras */
 
     /* Execucao do codigo */
@@ -75,6 +75,7 @@ int main() {
     switch(tipo_problema) {
 
         case 1:
+
             /* Dimensiona o sistema linear a ser resolvido */
             tamanho_sistema = 2;
             matriz_jacobiana = criarMatrizDinamica(tamanho_sistema, tamanho_sistema);
@@ -136,6 +137,7 @@ int main() {
             break;
 
         case 2:
+
             /* Dimensiona o sistema linear a ser resolvido */
             tamanho_sistema = 4;
             matriz_jacobiana = criarMatrizDinamica(tamanho_sistema, tamanho_sistema);
@@ -153,11 +155,6 @@ int main() {
 
             /* Criacao da matriz jacobiana e vetor_F_negativo iniciais */
             montarSistema2(matriz_jacobiana, vetor_x, vetor_F_negativo); /* matriz jacobiana inicial com x(0) = (1,1,1,1) */
-
-            // printf("\nMatriz jacobiana (k = 0):\n");
-            // imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
-            // printf("\nMatriz -F(x) (k = 0):\n");
-            // imprimirVetor(vetor_F_negativo, tamanho_sistema);
 
             k = 0; /* Iteracoes necessarias do metodo de newton */
             convergiu = 0;
@@ -196,6 +193,7 @@ int main() {
             break;
 
         case 3:
+
             printf("Digite o n desejado (sistema n-1 x n-1): ");
             scanf("%d", &tamanho_sistema);
             tamanho_sistema -=1;
@@ -255,10 +253,8 @@ int main() {
         case 4:
 
             /* Leitura do arquivo de barras e obtencao de parametros */
-
-            // printf("Digite o nome do arquivo de barras (com a terminacao .txt): ");
-            // scanf("%s", nome_arquivo);
-            strcpy(nome_arquivo, "Redes_fornecidas/1_Stevenson/1_Stevenson_DadosBarras.txt");
+            printf("Digite o nome do arquivo de barras (com a terminacao .txt): ");
+            scanf("%s", nome_arquivo);
             obterDadosBarras(nome_arquivo, &numero_barras, &N1, &N2, &N3);
 
             /* Dimensiona o sistema linear a ser resolvido */
@@ -273,40 +269,25 @@ int main() {
 
             matriz_PQPV = criarMatrizDinamica(N1 + N2, 5);
             matriz_swing = criarMatrizDinamica(N3, 5);
-
             criarMatrizesBarras(nome_arquivo, matriz_PQPV, matriz_swing, vetor_x, N1, N2);
 
             /* Leitura do arquivo de barras e criacao da matriz de admitancias */
-            // printf("Digite o nome do arquivo da matriz de admitancias nodais (com a terminacao .txt): ");
-            // scanf("%s", nome_arquivo);
-            strcpy(nome_arquivo, "Redes_fornecidas/1_Stevenson/1_Stevenson_Ynodal.txt");
+            printf("Digite o nome do arquivo da matriz de admitancias nodais (com a terminacao .txt): ");
+            scanf("%s", nome_arquivo);
             matriz_G = criarMatrizDinamica(numero_barras, numero_barras);
             matriz_B = criarMatrizDinamica(numero_barras, numero_barras);
             criarMatrizAdmitancias(nome_arquivo, matriz_G, matriz_B);
 
             erro_max = 0.001; /* 10^-6 */
 
-            k = 0;
+            k = 0; /* Iteracoes necessarias do metodo de newton */
             convergiu = 0;
             while(convergiu == 0) { /* Executa o metodo de Newton ate atingir a convergencia */
-                printf("\nIteracao %d\n", k);
+
+                k++; /* Aumenta o passo da iteracao*/
 
                 /* Montagem do sistema linear com a estimativa atual */
                 montarSistema4(matriz_jacobiana, matriz_PQPV, matriz_G, matriz_B, vetor_x, vetor_F_negativo, N1, N2);
-
-                // printf("\nMatriz PQPV\n");
-                // imprimirMatriz(matriz_PQPV, N1 + N2, 5);
-                // printf("\nMatriz G\n");
-                // imprimirMatriz(matriz_G, numero_barras, numero_barras);
-                // printf("\nMatriz B\n");
-                // imprimirMatriz(matriz_B, numero_barras, numero_barras);
-                // printf("\nMatriz Jacobiana\n");
-                // imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
-                // printf("\nVetor x\n");
-                // imprimirVetor(vetor_x, tamanho_sistema);
-                // printf("\nVetor_F_negativo\n");
-                // imprimirVetor(vetor_F_negativo, tamanho_sistema);
-                // break;
 
                 /* Teste de convergencia */
                 desvio_max = obterDesvioMaximo(vetor_F_negativo, tamanho_sistema);
@@ -323,24 +304,11 @@ int main() {
                 /* Decomposicao LU */
                 decomporLU(matriz_jacobiana, tamanho_sistema, vetor_p);
 
-                // printf("\nMatriz Jacobiana decomposta\n");
-                // imprimirMatriz(matriz_jacobiana, tamanho_sistema, tamanho_sistema);
-                // printf("\nVetor p\n");
-                // imprimirVetorInt(vetor_p, tamanho_sistema);
-
                 /* Solucao do sistema - produz um novo vetor de correcao*/
                 resolverSistemaLU(matriz_jacobiana, tamanho_sistema, tamanho_sistema, vetor_c, vetor_F_negativo, vetor_p);
 
-                // printf("\nVetor c\n");
-                // imprimirVetor(vetor_c, tamanho_sistema);
-
                 /* Atualizacao do vetor x do metodo de newton (x(k+1) = x(k) + c(k)) */
-                somarVetores(vetor_x, vetor_c, tamanho_sistema);
-
-                // printf("\nNovo vetor x\n");
-                // imprimirVetor(vetor_x, tamanho_sistema);
-
-                k++; /* Aumenta o passo da iteracao*/
+                somarVetores(vetor_x, vetor_c, tamanho_sistema);                
             }
 
             /* Desalocacao de memoria */
@@ -369,6 +337,7 @@ int main() {
 /* >>>>>>>>>>>>>>>>>>>>>>>>> Funcoes basicas <<<<<<<<<<<<<<<<<<<<<<<<< */
 
 double* criarVetorDinamico(int N) {
+    /* Cria um vetor de N doubles. */
     double *vetor;
 
     vetor = (double*) calloc(N, sizeof(double));
@@ -378,6 +347,7 @@ double* criarVetorDinamico(int N) {
 
 
 int* criarVetorDinamicoInt(int N) {
+    /* Cria um vetor de N inteiros. */
     int *vetor;
 
     vetor = (int*) calloc(N, sizeof(int));
@@ -387,7 +357,7 @@ int* criarVetorDinamicoInt(int N) {
 
 
 void somarVetores(double* vetor_x, double* vetor_c, int N) {
-    /* Soma vetor_c(k) em vetor_x(k) para obter vetor_x(k+1) */
+    /* Soma vetor_c(k) em vetor_x(k) para obter vetor_x(k+1). */
     int i;
 
     for(i = 0; i < N; i++) {
@@ -427,22 +397,23 @@ void imprimirVetorInt(int* vetor, int N) {
 
 
 double** criarMatrizDinamica(int m, int n) {
+    /* Cria uma matriz de m linhas e n colunas */
     double **matriz;
     int i;
 
-    if(m < 1 || n < 1) { /* verifica parametros recebidos */
+    if(m < 1 || n < 1) { /* Verifica parametros recebidos */
         printf ("** Erro: Parametro invalido **\n");
         return (NULL);
     }
 
-    /* aloca as linhas da matriz */
+    /* Aloca as linhas da matriz */
     matriz = (double **) calloc (m, sizeof(double *));
     if(matriz == NULL) {
         printf ("** Erro: Memoria Insuficiente **");
         return (NULL);
     }
 
-    /* aloca as colunas da matriz */
+    /* Aloca as colunas da matriz */
     for( i = 0; i < m; i++ ) {
         matriz[i] = (double*) calloc (n, sizeof(double));
         if(matriz[i] == NULL) {
@@ -472,7 +443,7 @@ void imprimirMatriz(double** matriz, int m, int n) {
 
 
 void trocarLinhasMatriz(double** matriz, int i1, int i2, int N) {
-    /* Troca as linhas i1 e i2 de Matriz */
+    /* Permuta as linhas i1 e i2 de Matriz */
     double temp;
     int j;
 
@@ -508,8 +479,8 @@ void decomporLU(double **matriz_LU, int N, int *vetor_p) {
 
     int k, i, j;
     double somatorio;
-    double maior_valor; /* maior elemento da coluna em questao */
-    double teste; /* variavel de teste para o maior modulo */
+    double maior_valor; /* Maior elemento da coluna em questao */
+    double teste; /* Variavel de teste para o maior modulo */
     int l; /* Indice correspondente a linha de maior elemento da coluna*/
 
     for(k = 0; k < N; k++) {
@@ -552,13 +523,13 @@ void decomporLU(double **matriz_LU, int N, int *vetor_p) {
 
 
 void resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_x, double *vetor_b, int *vetor_p) {
-    /* Dada uma matriz LU, enxerta o vetor solução b e resolve o sistema para obter o vetor de correcao de incognitas vetor_c */
-    double *y; /* vetor de incognitas: Ly = b */
-    // double *x; /* vetor de incognitas Ux = y*/
+    /* Dada uma matriz LU e o vetor de solução b, resolve o sistema para obter o vetor de correcao de incognitas vetor_c */
+
+    double *y; /* Vetor de incognitas auxiliar */
     double soma, temp; /* variaveis auxiliares*/
     int i, j; /* variaveis auxiliares*/
 
-    /* Permuta o vetor de solucoes com as permutacoes definidas pelo vetor_p */
+    /* Permuta o vetor de solucoes b com as permutacoes definidas pelo vetor_p */
     for(i = 0; i < m; i++) {
         temp = vetor_b[i];
         j = vetor_p[i];
@@ -566,7 +537,7 @@ void resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_x, double
         vetor_b[j] = temp;
     }
 
-    /* Resolve a parte L, achando o vetor de incognitas y */
+    /* Resolve a parte L, achando o vetor de incognitas y (Ly = b) */
     y = criarVetorDinamico(m);
     y[0] = vetor_b[0];
 
@@ -578,8 +549,7 @@ void resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_x, double
         y[i] = (vetor_b[i] - soma);
     }    
 
-    /* Resolve a parte U */
-    // x = criarVetorDinamico(m);
+    /* Resolve a parte U, alocando em vetor_x a incógnita de Ux = y */
     vetor_x[m-1] = y[m-1] / matriz_LU[m-1][n-1];
 
     for(i = m - 2; i >= 0; i--) {
@@ -596,9 +566,9 @@ void resolverSistemaLU(double **matriz_LU, int m, int n, double *vetor_x, double
 double obterDesvioMaximo(double *vetor_c, int N) {
     /* Dado o vetor_F_negativo do sistema, que é o vetor de desvios em
     relacao à raiz, obtém o maio desvio em módulo entre seus elementos*/
+   
     int i;
     double desvio, teste;
-
     desvio = 0;
 
     for(i = 0; i< N; i++) {
@@ -613,6 +583,7 @@ double obterDesvioMaximo(double *vetor_c, int N) {
 
 void montarSistema2(double **matriz_jacobiana, double *vetor_x, double *vetor_F_negativo) {
     /* Cria a matriz jacobiana para o Teste 2, usando o vetor de incognitas vetor_x */
+
     matriz_jacobiana[0][0]= 4 - vetor_x[3];
     matriz_jacobiana[0][1]= -1;
     matriz_jacobiana[0][2]= 1;
@@ -671,6 +642,7 @@ void montarSistema3(double **matriz_jacobiana, int tamanho_sistema, double *veto
 
 void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **matriz_G, double **matriz_B, double *vetor_x, double *vetor_F_negativo, int N1, int N2) {
     /* Preenche o sistema linear para o teste 4 */
+
     int barra, i; /* Variaveis auxiliares dos loops*/
     int j; /* Variavel auxiliar para cada barra */
     int k; /* Variavel auxiliar para a iteracao do somatorio */
@@ -692,7 +664,7 @@ void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **ma
                 matriz_jacobiana[barra][i] = -1 * matriz_PQPV[barra][2] * matriz_PQPV[i][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
 
                 /* Somatorio usado em Theta j */
-                somatorio_1 += matriz_PQPV[i][2] * (matriz_G[j][k]*sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
+                somatorio_1 += matriz_PQPV[i][2] * (matriz_G[j][k] * sin(vetor_x[i]-vetor_x[barra]) + matriz_B[j][k] * cos(vetor_x[i]-vetor_x[barra]));
 
                 /*Somatorio usado em -fpj*/
                 somatorio_3 += matriz_PQPV[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
@@ -702,12 +674,12 @@ void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **ma
         matriz_jacobiana[barra][barra] = matriz_PQPV[barra][2] * somatorio_1; /* Derivada parcial de fpj em função de Theta j */
 
         /* Preenchimento do quadrante superior direito da jacobiana */
-        for(i=0; i < N1; i++) {
+        for(i = 0; i < N1; i++) {
             k = matriz_PQPV[i][0]; /* k armazena o numero da barra em questao */
              if(k != j) {
 
                 /* Derivada parcial de fpj em funcao de Vk */
-                matriz_jacobiana[barra][i+N1+N2] = matriz_PQPV[barra][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
+                matriz_jacobiana[barra][i +N1+N2] = matriz_PQPV[barra][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
 
                 /* Somatorio usado em Vj: */
                 somatorio_2 += matriz_PQPV[i][2] * (matriz_G[j][k] * cos(vetor_x[i]-vetor_x[barra]) - matriz_B[j][k] * sin(vetor_x[i]-vetor_x[barra]));
@@ -716,7 +688,7 @@ void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **ma
 
         matriz_jacobiana[barra][barra+N1+N2] = 2 * matriz_PQPV[barra][2] * matriz_G[j][j] + somatorio_2; /* Derivada parcial de fpj em função de Vj */
 
-        /* Preenchimento do vetor_F_negativo (-fpj)*/
+        /* Preenchimento do vetor_F_negativo (-fpj) */
         if (barra < N1) {
             /* Para barras PQ */
             vetor_F_negativo[barra] = -1 * matriz_PQPV[barra][2] * matriz_PQPV[barra][2] * matriz_G[j][j] - matriz_PQPV[barra][2] * somatorio_3; /* -fpj = -Pcalc */
@@ -735,7 +707,9 @@ void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **ma
 
         /* Preenchimento do quadrante inferior esquerdo */
         for(i = 0; i < N1 + N2; i++) {
+
             k = matriz_PQPV[i][0]; /* k armazena o numero da barra em questao */
+
             if(k != j) {
 
                 /* Derivada parcial de fqj em funcao de Theta k */
@@ -753,7 +727,9 @@ void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **ma
 
         /* Preenchimento do quadrante inferior direito da jacobiana */
         for(i = 0; i < N1; i++) {
+
             k = matriz_PQPV[i][0]; /* k armazena o numero da barra em questao */
+
             if(k != j) {
 
                 /* Derivada parcial de fqj em relacao a Vk */
@@ -766,7 +742,7 @@ void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **ma
 
         matriz_jacobiana[barra+N1+N2][barra+N1+N2] = -2 * matriz_PQPV[barra][2] * matriz_B[j][j] - somatorio_2; /* Derivada parcial de fqj em função de Vj */
 
-        /* Preenchimento do vetor_F_negativo */
+        /* Preenchimento do vetor_F_negativo (-fqj) - barras PQ */
         vetor_F_negativo[barra+N1+N2] = matriz_PQPV[barra][2] * matriz_PQPV[barra][2] * matriz_B[j][j] + matriz_PQPV[barra][2] * somatorio_3; /* -fqj = -Qcalc */
     }
 }
@@ -774,7 +750,8 @@ void montarSistema4(double **matriz_jacobiana, double **matriz_PQPV, double **ma
 
 void obterDadosBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3) {
     /* Obtem parametros do arquivo de barras, como o numero total de linhas e a quantidade de cada tipo de barra */
-    char linha[512]; /* Precisa mesmo ser 512? */
+
+    char linha[512];
     int numero_barras; /* Quantidade total de barras (nos) */
     int id_barra; /* Numero da barra */
     int tipo_barra; /* 0 => PQ; 1 => PV; 2 => Swing */
@@ -799,10 +776,10 @@ void obterDadosBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3
     j = 0;
     k = 0;
 
-    while(fgets(linha, sizeof(linha), arquivo) != NULL) { /* pega uma linha de ate 512 caracteres. Null quando acabar as linhas */
+    while(fgets(linha, sizeof(linha), arquivo) != NULL) { /* Le uma linha de ate 512 caracteres. Null quando acabar as linhas */
         sscanf(linha, "%d %d %le %le %le", &id_barra, &tipo_barra, &tensao_nominal, &parametro_1, &parametro_2);
 
-        switch(tipo_barra) {
+        switch(tipo_barra) { 
             case 0:
                 i += 1;
                 break;
@@ -828,20 +805,20 @@ void obterDadosBarras(char *nome_arquivo, int *linhas, int *N1, int *N2, int *N3
 
 void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQPV, double **matriz_swing, double *vetor_x, int N1, int N2) {
     /* Cria matriz_PQ, matriz_PV e matriz_swing de acordo com o arquivo de dados de barras fornecido */
-    char linha[512]; /* Precisa mesmo ser 512? */
+
+    char linha[512]; 
     int numero_barras;
-    int tamanho_sistema;
     int id_barra; /* Numero da barra */
     int tipo_barra; /* 0 => PQ; 1 => PV; 2 => Swing */
     double tensao_nominal; /* Tensao nominal de fase */
     double parametro_1; /* PQ: P absorvida nominal; PV: P de geracao; Swing: modulo da tensao */
     double parametro_2; /* PQ: Q absorvida nominal; PV: modulo da tensao; Swing: fase da tensao */
     int i, j, k; /* Variaveis auxiliares */
-    double **matriz_PV;
-    double **matriz_PQ;
+    double **matriz_PV; /* Matriz auxiliar*/
+    double **matriz_PQ; /* Matriz auxiliar*/
 
-    matriz_PQ = criarMatrizDinamica(N1, 5); /* Matriz auxiliar*/
-    matriz_PV = criarMatrizDinamica(N2, 5); /* Matriz auxiliar*/
+    matriz_PQ = criarMatrizDinamica(N1, 5); 
+    matriz_PV = criarMatrizDinamica(N2, 5); 
 
     FILE *arquivo = fopen(nome_arquivo, "r");
 
@@ -922,7 +899,8 @@ void criarMatrizesBarras(char *nome_arquivo, double **matriz_PQPV, double **matr
 
 void criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matriz_B) {
     /* Preenche as matrizes G e B de acordo com os valores das condutancias e susceptancias fornecidos pelo arquivo da matriz de admintancias */
-    char linha[512]; /* Precisa mesmo ser 512? */
+
+    char linha[512];
     int numero_elementos; /* Numero de elementos da matriz de admitancias */
     int j, k; /* linha e coluna de cada elemento */
     double G; /* Condutancia do elemento */
@@ -937,7 +915,7 @@ void criarMatrizAdmitancias(char *nome_arquivo, double **matriz_G, double **matr
 
     fscanf(arquivo, "%d\n", &numero_elementos);
 
-    while(fgets(linha, sizeof(linha), arquivo) != NULL) { /* pega uma linha de até 512 caracteres. Null quando acabar as linhas */
+    while(fgets(linha, sizeof(linha), arquivo) != NULL) { /* Le uma linha de até 512 caracteres. Null quando acabar as linhas */
         sscanf(linha, "%d %d %le %le", &j, &k, &G, &B);
         matriz_G[j][k] = G;
         matriz_B[j][k] = B;
